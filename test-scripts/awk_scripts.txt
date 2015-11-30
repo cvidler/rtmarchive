@@ -1,0 +1,40 @@
+AWK scripts to process a zdata files contents
+
+
+Unique Server/Port Combinations:
+awk -F" " '$1=="U" { a[$2"|"$6]++ } END { for (b in a) {print b} }'
+with XML tags:
+awk -F" " '$1=="U" { a["<serverIP>"$2"</serverIP><port>"$6"</port>"]++ } END { { print "<serverIPPorts>" } for (b in a) {print "<serverIPPort>"b"</serverIPPort>"} { print "</serverIPPorts>"} }'
+
+
+Unique Server IPs:
+awk -F" " '$1=="U" { a[$2]++ } END { for (b in a) {print b} }'
+sorted:
+awk -F" " '$1=="U" { a[$2]++ } END { n=asorti(a,c) } END { for (i = 1; i <= n; i++) { print c[i] } }'
+with XML tags:
+awk -F" " '$1=="U" { a[$2]++ } END { { print "<serverIPs>" } for (b in a) {print "<serverIP>"b"</serverIP>"} { print "</serverIPs>" } }'
+awk -F" " '$1=="U" { a[$2]++ } END { n=asorti(a,c) } END { { print "<serverIPs>" } for (i = 1; i <= n; i++ ) {print "<serverIP>"c[i]"</serverIP>"} { print "</serverIPs>" } }'
+
+
+Unique Client IPs:
+awk -F" " '$1=="U" { a[$3]++ } END { for (b in a) {print b} }'
+with XML tags:
+awk -F" " '$1=="U" { a[$3]++ } END { { print "<clientIPs>" } for (b in a) {print "<clientIP>"b"</clientIP>"} { print "</clientIPs>" } }'
+
+
+Unique Server Ports:
+awk -F" " '$1=="U" { a[$6]++ } END { for (b in a) {print b} }'
+with XML tags:
+awk -F" " '$1=="U" { a[$6]++ } END { { print "<serverPorts>" } for (b in a) {print "<serverPort>"b"</serverPort>"} { print "</serverPorts>" } }'
+
+
+Unique Softwre Services:
+awk -F" " '$1=="U" { a[$7]++ } END { for (b in a) {print b} }'
+with XML tags:
+awk -F" " '$1=="U" { a[$7]++ } END { {print "<softwareServices>"} for (b in a) {print "<softwareService>"b"</softwareService>" } {print "</softwareServices>"} }'
+
+
+Decode urlencoded strings:
+awk -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}'
+
+
