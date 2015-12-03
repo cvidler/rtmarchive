@@ -40,7 +40,8 @@ echo rtmarchive script
 echo 
 echo Loading AMDs from config file: $AMDLIST
 echo
-echo `awk -F"," '$1=="A" { print " - " $3 } ' $AMDLIST`
+echo `$AWK -F"," '$1=="A" { print " + " $3 } ' $AMDLIST`
+echo `$AWK -F"," '$1=="D" { print " - " $3 " Disabled" } ' $AMDLIST`
 echo
 
 $AWK -F"," '$1=="A" { print $3" "$2 } ' $AMDLIST | while read p q; do 

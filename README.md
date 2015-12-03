@@ -7,6 +7,7 @@ Requirements:
 - wget
 - which
 - gunzip
+- touch
 
 Tested against:
 - DCRUM 12.3
