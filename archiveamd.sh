@@ -74,31 +74,27 @@ $AWK 'NR==FNR{a[$1]++;next;}!($0 in a)' $AMDDIR/prevdir.lst $AMDDIR/currdir.lst 
 	$TOUCH -c -t $FTS  "$AMDDIR/${p}"
 
 	# Proces contents here
-	# TBA
-	if [ ${p} == "zdata*" ]; then
-		# get UUID from zdata
-		local UUID=`$AWK -F" " '$1=="#AmdUUID:" { print $2 }'`
+	if [[ ${p} =~ zdata_.* ]]; then
+		# get UUID from zdata, use to check if the AMD changes unexpectedly.
+		export UUID=`$AWK -F" " '$1=="#AmdUUID:" { print $2 }' $AMDDIR/${p}`
 		if [ ! -f "$AMDDIR/uuid.lst" ]; then
 			echo $UUID > $AMDDIR/uuid.lst
 		else
 			while read k; do
-				local OLDUUID=${k}
+				export OLDUUID=${k}
 			done < $AMDDIR/uuid.lst
-			if [ $OLDUUID -ne $UUID ]; then
+			if [ ! "$OLDUUID" == "$UUID" ]; then
 				echo ***WARNING: UUID Mismatch on AMD: $AMDNAME, Old: $OLDUUID, New: $UUID
 				echo ***WARNING: If this is expected remove file $AMDDIR/uuid.lst to clear the error
 			fi
 		fi
 
-		# get TS from zdata
-		local TS=`$AWK -F" " '$1=="#TS:" { print $2 }'` 
+		# get TS from zdata, keep record of all timestamps we have archived.
+		export TS=`$AWK -F" " '$1=="#TS:" { print $2 }' $AMDDIR/${p}` 
 		echo $TS >> $AMDDIR/timestamps.lst
-		# 
+
 	fi
 done
-
-# kick off zdata processing
-
 
 
 # finally, make the current dir list the previous one.
