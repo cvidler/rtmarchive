@@ -15,6 +15,7 @@ export AMDDIR=$BASEDIR/$AMDNAME
 export AWK=`which awk`
 export WGET=`which wget`
 export GUNZIP=`which gunzip`
+export TOUCH=`which touch`
 
 #echo $AMDNAME, $URL, $BASEDIR
 
@@ -31,35 +32,30 @@ function test {
 echo Archiving AMD: $AMDNAME beginning
 
 # check if data folder exists, create if needed.
-if [ ! -d "$AMDDIR" ]
-then
+if [ ! -d "$AMDDIR" ]; then
 	mkdir "$AMDDIR"
 	echo ***NOTE Created AMD data folder $AMDDIR.
 fi
 
 # check access to data folder
-if [ ! -w "$AMDDIR" ]
-then
+if [ ! -w "$AMDDIR" ]; then
 	echo ***FATAL Cannot write to $AMDDIR Aborting.
 	exit 1
 fi
 
 # check for existing previous data file list, touch it if needed
-if [ ! -r "$AMDDIR/prevdir.lst" ]
-then
+if [ ! -r "$AMDDIR/prevdir.lst" ]; then
 	touch "$AMDDIR/prevdir.lst"
 fi
 
 # check for existing current data file list (there shouldn't be one, remove it
-if [ -f "$AMDDIR/currdir.lst" ]
-then
+if [ -f "$AMDDIR/currdir.lst" ]; then
 	rm "$AMDDIR/currdir.lst"
 fi
 
 # Get data file listing from AMD
-test $WGET --no-check-certificate -S -O - $URL/RtmDataServlet?cmd=zip_dir | $GUNZIP > $AMDDIR/currdir.lst
-if [ $? -ne 0 ]
-then
+test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_dir | $GUNZIP > $AMDDIR/currdir.lst
+if [ $? -ne 0 ]; then
 	echo ***FATAL: $? Can not download directory listing from AMD: $AMDNAME
 	exit 1
 fi
@@ -67,15 +63,41 @@ fi
 # determine delta of current file list from previous and download them all.
 $AWK 'NR==FNR{a[$1]++;next;}!($0 in a)' $AMDDIR/prevdir.lst $AMDDIR/currdir.lst | while read p; do
         echo Downloading ${p} from $AMDNAME
-	test $WGET --no-check-certificate -S -O - $URL/RtmDataServlet?cmd=zip_entry\&entry=${p} | $GUNZIP > $AMDDIR/${p}
-	if [ $? -ne 0 ]
-	then
+	test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_entry\&entry=${p} | $GUNZIP > $AMDDIR/${p}
+	if [ $? -ne 0 ]; then
         	echo ***WARNING: $? Can not download file: ${p} from AMD: $AMDNAME
 	fi
 
-	#proces contents here
-	#TBA
+	# Set file timestamp correctly
+	# extract timestamp from file name and convert it to require format CCYYMMDDhhmm.SS
+	export FTS=`echo ${p} | $AWK -F"_" ' { print strftime("%Y%m%d%H%M.%S",strtonum("0x"$2),1); } '`
+	$TOUCH -c -t $FTS  "$AMDDIR/${p}"
+
+	# Proces contents here
+	# TBA
+	if [ ${p} == "zdata*" ]; then
+		# get UUID from zdata
+		local UUID=`$AWK -F" " '$1=="#AmdUUID:" { print $2 }'`
+		if [ ! -f "$AMDDIR/uuid.lst" ]; then
+			echo $UUID > $AMDDIR/uuid.lst
+		else
+			while read k; do
+				local OLDUUID=${k}
+			done < $AMDDIR/uuid.lst
+			if [ $OLDUUID -ne $UUID ]; then
+				echo ***WARNING: UUID Mismatch on AMD: $AMDNAME, Old: $OLDUUID, New: $UUID
+				echo ***WARNING: If this is expected remove file $AMDDIR/uuid.lst to clear the error
+			fi
+		fi
+
+		# get TS from zdata
+		local TS=`$AWK -F" " '$1=="#TS:" { print $2 }'` 
+		echo $TS >> $AMDDIR/timestamps.lst
+		# 
+	fi
 done
+
+# kick off zdata processing
 
 
 
@@ -84,4 +106,6 @@ rm $AMDDIR/prevdir.lst
 mv $AMDDIR/currdir.lst $AMDDIR/prevdir.lst
 
 echo Archiving AMD: $AMDNAME complete
+
+
 
