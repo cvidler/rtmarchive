@@ -38,3 +38,24 @@ Decode urlencoded strings:
 awk -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}'
 
 
+Extract UUID from zdata file:
+awk -F" " '$1=="#AmdUUID:" { print $2 }'
+
+
+Extract Timestamp from zdata file:
+awk -F" " '$1=="#TS:" { print $2 }'
+in readable format:
+awk -F" " '$1=="#TS:" { print strftime("%c",strtonum("0x"$2),1); }'
+
+
+Differences of two files (output of 'ls -1' or get_dir from rtmgate):
+(sorted):
+awk 'NR==FNR{a[$1]++;next;}!($0 in a)' /tmp/folderlist1 /tmp/folderlist2
+(unsorted):
+awk '{ h[$0] = ! h[$0] } END { for (k in h) if (h[k]) print k }' /tmp/folderlist1 /tmp/folderlist2
+
+
+Process AMD List file:
+awk -F"," '$1=="A" { print $3","$2 }'
+
+

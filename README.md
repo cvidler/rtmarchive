@@ -5,6 +5,8 @@ Requirements:
 - bash
 - gawk
 - wget
+- which
+- gunzip
 
 Tested against:
 - DCRUM 12.3

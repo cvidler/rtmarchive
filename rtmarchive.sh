@@ -12,8 +12,8 @@ export SCRIPTDIR=~/rtmarchive
 
 
 
-
 # Start of script - do not edit below
+export AWK=`which awk`
 
 # Some sanity checking of the config parameters above
 if [ ! -r "$AMDLIST" ]
@@ -43,9 +43,9 @@ echo
 echo `awk -F"," '$1=="A" { print " - " $3 } ' $AMDLIST`
 echo
 
-awk -F"," '$1=="A" { print $3" "$2 } ' $AMDLIST | while read p q; do 
+$AWK -F"," '$1=="A" { print $3" "$2 } ' $AMDLIST | while read p q; do 
 	echo Launching amdarchive script for: ${p}
-	#$SCRIPTDIR/archiveamd.sh "${p}" "${q}" "$BASEDIR" &
+	$SCRIPTDIR/archiveamd.sh "${p}" "${q}" "$BASEDIR" &
 done
 
 echo
