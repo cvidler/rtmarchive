@@ -18,19 +18,19 @@ AWK=`which awk`
 # Some sanity checking of the config parameters above
 if [ ! -r "$AMDLIST" ]
 then 
-	echo ***FATAL: AMD config list file $AMDLIST not found. Aborting.
+	echo -e "\e[31m***FATAL:\e[39m AMD config list file $AMDLIST not found. Aborting."
 	exit
 fi
 
 if [ ! -w "$BASEDIR" ]
 then
-	echo ***FATAL: archive storage directory $BASEDIR not found or not writeable. Aborting.
+	echo -e "\e[31m***FATAL:\e[39m Archive storage directory $BASEDIR not found or not writeable. Aborting."
 	exit
 fi
 
 if [ ! -x "$SCRIPTDIR/archiveamd.sh" ]
 then
-        echo ***FATAL: Required scripts in script directory $SCRIPTDIR not found or not executable. Aborting.
+        echo -e "\e[31m***FATAL:\e[39m Required scripts in script directory $SCRIPTDIR not found or not executable. Aborting."
         exit
 fi
 
