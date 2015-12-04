@@ -24,10 +24,15 @@ function test {
 	"$@"
 	local status=$?
 	if [ $status -ne 0 ]; then
-		echo -e "\e[33m***WARNING:\e[39m Non-zero exit code $status for '$1'" >&2
+		echo -e "\e[33m***WARNING:\e[0m Non-zero exit code $status for '$@'" >&2
 	fi
 	return $status
 }
+
+function debugecho {
+	if [ $DEBUG -ne 0 ]; then echo "$@"; fi
+}
+
 
 
 echo Archiving AMD: $AMDNAME beginning
@@ -40,7 +45,7 @@ fi
 
 # check access to data folder
 if [ ! -w "$AMDDIR" ]; then
-	echo -e "\e[31m***FATAL:\e[39m Cannot write to $AMDDIR Aborting."
+	echo -e "\e[31m***FATAL:\e[0m Cannot write to $AMDDIR Aborting."
 	exit 1
 fi
 
@@ -55,12 +60,19 @@ if [ -f "$AMDDIR/currdir.lst" ]; then
 	rm "$AMDDIR/currdir.lst"
 fi
 
-# Get data file listing from AMD
-test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_dir | $GUNZIP > $AMDDIR/currdir.lst
-if [ $? -ne 0 ]; then
-	echo -e "\e[31m***FATAL:\e[39m $? Can not download directory listing from AMD: $AMDNAME"
-	exit 1
-fi
+# Get data file listing from AMD, try 3 times, abort (FATAL) if failed
+fail=0
+for i in 1 2 3; do
+	test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_dir | $GUNZIP > $AMDDIR/currdir.lst
+	if [ $? -ne 0 ]; then
+		echo -e "\e[31m***FATAL:\e[0m $? Can not download directory listing from AMD: $AMDNAME try: ${i}"
+		fail=$((fail + 1))
+	else
+		break
+	fi
+done
+if [ $fail -ne 0 ]; then exit 1; fi
+
 
 downloaded=0
 warnings=0
@@ -69,25 +81,42 @@ warnings=0
 while read p; do
 
 	# Validate file name is something we want.
-	if [ "`echo ${p} | $AWK ' /[a-z0-9]+_[0-9a-f]+_[15]_[tb]/ '`" == "${p}" ]; then
-
-	        if [ $DEBUG -ne 0 ]; then echo Downloading ${p} from $AMDNAME; fi
-		test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_entry\&entry=${p} | $GUNZIP > $AMDDIR/${p}
-		if [ $? -ne 0 ]; then
-			warnings=$((warnings + 1))
-	        	echo -e "\e[33m***WARNING:\e[39m $? Can not download file: ${p} from AMD: $AMDNAME"
+	if [ "`echo ${p} | $AWK ' /[a-z0-9]+_[0-9a-f]+_[150a]+_[tb]/ '`" == "${p}" ]; then
+	 	# Extract date codes from file name	
+		year=`echo ${p} | $AWK -F"_" ' { print strftime("%Y",strtonum("0x"$2),1); } '`
+		month=`echo ${p} | $AWK -F"_" ' { print strftime("%m",strtonum("0x"$2),1); } '`
+		day=`echo ${p} | $AWK -F"_" ' { print strftime("%d",strtonum("0x"$2),1); } '`
+		#echo ${file},$year,$month,$day 
+		# Check for correct folder structure - create if needed
+		if [ ! -w "$AMDDIR/$year/$month/$day/" ]; then
+			mkdir -p "$AMDDIR/$year/$month/$day/"
 		fi
-		downloaded=$((downloaded + 1))
+		file=$AMDDIR/$year/$month/$day/${p}
+
+	        debugecho "Downloading ${p} from $AMDNAME to $file"
+		# Try download 3 times
+		warn=0
+		for i in 1 2 3 ; do
+			test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_entry\&entry=${p} | $GUNZIP > $file
+			if [ $? -ne 0 ]; then
+				warn=$((warn + 1))
+	        		echo -e "\e[33m***WARNING:\e[39m $? Can not download file: ${p} from AMD: $AMDNAME try: ${i}"
+			else
+				downloaded=$((downloaded + 1))
+				break
+			fi
+		done
+		if [ $warn -ne 0 ]; then warnings=$((warnings + 1)); fi
 	
 		# Set file timestamp correctly
 		# extract timestamp from file name and convert it to require format CCYYMMDDhhmm.SS
 		FTS=`echo ${p} | $AWK -F"_" ' { print strftime("%Y%m%d%H%M.%S",strtonum("0x"$2),1); } '`
-		$TOUCH -c -t $FTS  "$AMDDIR/${p}"
+		$TOUCH -c -t $FTS  "$file"
 	
 		# Proces contents here
 		if [[ ${p} =~ zdata_.* ]]; then
 			# get UUID from zdata, use to check if the AMD changes unexpectedly.
-			UUID=`$AWK -F" " '$1=="#AmdUUID:" { print $2 }' $AMDDIR/${p}`
+			UUID=`$AWK -F" " '$1=="#AmdUUID:" { print $2 }' $file`
 			if [ ! -f "$AMDDIR/uuid.lst" ]; then
 				echo $UUID > $AMDDIR/uuid.lst
 			else
@@ -101,8 +130,8 @@ while read p; do
 			fi
 	
 			# get TS from zdata, keep record of all timestamps we have archived.
-			TS=`$AWK -F" " '$1=="#TS:" { print $2 }' $AMDDIR/${p}` 
-			echo $TS >> $AMDDIR/timestamps.lst
+			#TS=`$AWK -F" " '$1=="#TS:" { print $2 }' $file` 
+			#echo $TS >> $AMDDIR/timestamps.lst
 		fi
 	else
 		echo -e "\e[33m***WARNING:\e[39m Unknown file: ${p} on AMD: $AMDNAME"
@@ -114,8 +143,10 @@ done < <($AWK 'NR==FNR{a[$1]++;next;}!($0 in a)' $AMDDIR/prevdir.lst $AMDDIR/cur
 rm $AMDDIR/prevdir.lst
 mv $AMDDIR/currdir.lst $AMDDIR/prevdir.lst
 
-echo Archiving AMD: $AMDNAME complete, downloaded $downloaded
-if [ $warnings -ne 0 ]; then echo Warnings: $warnings; fi
+echo -ne "Archiving AMD: $AMDNAME complete, downloaded $downloaded"
+if [ $warnings -ne 0 ]; then echo -e " - \e[33mWarnings: $warnings\e[0m"; fi
+echo
+
 
 
 

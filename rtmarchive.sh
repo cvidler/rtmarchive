@@ -5,10 +5,10 @@
 #
 
 #config 
-export AMDLIST=amdlist.cfg
-export BASEDIR=/var/spool/rtmarchive
-export SCRIPTDIR=~/rtmarchive
-export DEBUG=1
+AMDLIST=amdlist.cfg
+BASEDIR=/var/spool/rtmarchive
+SCRIPTDIR=~/rtmarchive
+DEBUG=1
 
 
 
@@ -38,15 +38,14 @@ fi
 # Lets start things
 echo rtmarchive script
 echo 
-echo Loading AMDs from config file: $AMDLIST
+echo "Loading AMDs from config file: $AMDLIST"
 echo
-echo `$AWK -F"," '$1=="A" { print " + " $3 } ' $AMDLIST`
-echo `$AWK -F"," '$1=="D" { print " - " $3 " Disabled" } ' $AMDLIST`
+echo -e "`$AWK -F"," '$1=="A" { print " + " $3 "" } ' $AMDLIST`"
+echo -e "\e[2m`$AWK -F"," '$1=="D" { print " - " $3 " Disabled" } ' $AMDLIST`\e[0m"
 echo
-
 
 $AWK -F"," '$1=="A" { print $3" "$2 } ' $AMDLIST | ( while read p q; do 
-	echo Launching amdarchive script for: ${p}
+	echo -e "Launching amdarchive script for: ${p}"
 	$SCRIPTDIR/archiveamd.sh "${p}" "${q}" "$BASEDIR" $DEBUG &
 done; wait
 )
