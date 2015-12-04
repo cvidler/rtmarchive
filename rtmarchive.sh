@@ -8,12 +8,12 @@
 export AMDLIST=amdlist.cfg
 export BASEDIR=/var/spool/rtmarchive
 export SCRIPTDIR=~/rtmarchive
-
+export DEBUG=1
 
 
 
 # Start of script - do not edit below
-export AWK=`which awk`
+AWK=`which awk`
 
 # Some sanity checking of the config parameters above
 if [ ! -r "$AMDLIST" ]
@@ -44,10 +44,12 @@ echo `$AWK -F"," '$1=="A" { print " + " $3 } ' $AMDLIST`
 echo `$AWK -F"," '$1=="D" { print " - " $3 " Disabled" } ' $AMDLIST`
 echo
 
-$AWK -F"," '$1=="A" { print $3" "$2 } ' $AMDLIST | while read p q; do 
+
+$AWK -F"," '$1=="A" { print $3" "$2 } ' $AMDLIST | ( while read p q; do 
 	echo Launching amdarchive script for: ${p}
-	$SCRIPTDIR/archiveamd.sh "${p}" "${q}" "$BASEDIR" &
-done
+	$SCRIPTDIR/archiveamd.sh "${p}" "${q}" "$BASEDIR" $DEBUG &
+done; wait
+)
 
 echo
 echo rtmarchive script complete

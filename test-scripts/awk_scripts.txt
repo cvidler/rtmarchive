@@ -59,6 +59,11 @@ awk 'NR==FNR{a[$1]++;next;}!($0 in a)' /tmp/folderlist1 /tmp/folderlist2
 awk '{ h[$0] = ! h[$0] } END { for (k in h) if (h[k]) print k }' /tmp/folderlist1 /tmp/folderlist2
 
 
+Validate data file names:
+awk ' /[a-z0-9]+_[0-9a-f]+_[15]_[tb]/ '
+matches files of the format xxxdata_8charhextimestamp_intervaltime_t
+
+
 Process AMD List file:
 awk -F"," '$1=="A" { print $3","$2 }'
 
