@@ -8,6 +8,10 @@ Requirements:
 - which
 - gunzip
 - touch
+- cat
+- wc
+- date
+- md5sum
 
 Tested against:
 - DCRUM 12.3

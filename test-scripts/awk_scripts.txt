@@ -1,5 +1,8 @@
 AWK scripts to process a zdata files contents
 
+De-dupe list
+awk '!seen[$0]++'
+
 
 Unique Server/Port Combinations:
 awk -F" " '$1=="U" { a[$2"|"$6]++ } END { for (b in a) {print b} }'
@@ -60,7 +63,7 @@ awk '{ h[$0] = ! h[$0] } END { for (k in h) if (h[k]) print k }' /tmp/folderlist
 
 
 Validate data file names:
-awk ' /[a-z0-9]+_[0-9a-f]+_[15]_[tb]/ '
+awk ' /[a-z0-9]+_[0-9a-f]+_[150a]+_[tb]/ '
 matches files of the format xxxdata_8charhextimestamp_intervaltime_t
 
 
