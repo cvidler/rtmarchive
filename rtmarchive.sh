@@ -13,6 +13,8 @@ DEBUG=1
 
 
 # Start of script - do not edit below
+set -euo pipefail
+IFS=$',\n\t'
 AWK=`which awk`
 
 # Some sanity checking of the config parameters above
@@ -44,7 +46,7 @@ echo -e "`$AWK -F"," '$1=="A" { print " + " $3 "" } ' $AMDLIST`"
 echo -e "\e[2m`$AWK -F"," '$1=="D" { print " - " $3 " Disabled" } ' $AMDLIST`\e[0m"
 echo
 
-$AWK -F"," '$1=="A" { print $3" "$2 } ' $AMDLIST | ( while read p q; do 
+$AWK -F"," '$1=="A" { print $3","$2 } ' $AMDLIST | ( while read p q; do 
 	echo -e "Launching amdarchive script for: ${p}"
 	$SCRIPTDIR/archiveamd.sh "${p}" "${q}" "$BASEDIR" $DEBUG &
 done; wait
