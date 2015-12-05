@@ -75,7 +75,7 @@ fi
 
 # Get data file listing from AMD, try 3 times, abort (FATAL) if failed
 fail=0
-for i in 1,2,3; do
+for i in 1 2 3; do
 	set +e
 	test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_dir | $GUNZIP > $AMDDIR/currdir.lst
 	if [ $? -ne 0 ]; then
@@ -113,7 +113,7 @@ while read p; do
 	        debugecho "Downloading ${p} from $AMDNAME to $file"
 		# Try download 3 times
 		warn=0
-		for i in 1,2,3 ; do
+		for i in 1 2 3 ; do
 			set +e
 			test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_entry\&entry=${p} | $GUNZIP > $file
 			if [ $? -ne 0 ]; then
