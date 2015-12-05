@@ -11,11 +11,13 @@
 
 
 # Script below do not edit
+set -euo pipefail
+IFS=$',\n\t'
 
-AMDNAME=$1
-URL=$2
-BASEDIR=$3
-DEBUG=$4
+AMDNAME=${1:-}
+URL=${2:-}
+BASEDIR=${3:-}
+DEBUG=${4:-0}
 AMDDIR=$BASEDIR/$AMDNAME
 AWK=`which awk`
 WGET=`which wget`
@@ -25,10 +27,12 @@ TOUCH=`which touch`
 #echo $AMDNAME, $URL, $BASEDIR
 
 function test {
+	set +e
 	"$@"
 	local status=$?
+	set -e
 	if [ $status -ne 0 ]; then
-		if [ $DEBUG -ne 0 ]; then echo -e "\e[33m***WARNING:\e[0m Non-zero exit code $status for '$@'" >&2; fi
+		debugecho "\e[33m***WARNING:\e[0m Non-zero exit code $status for '$@'" >&2
 	fi
 	return $status
 }
@@ -38,8 +42,13 @@ function debugecho {
 }
 
 
+#check passed parameters
+if [ -z "$AMDNAME" ]; then
+	echo -e "\e[31m***FATAL:\e[0m parameter not supplied Aborting."
+	exit 1
+fi
 
-echo Archiving AMD: $AMDNAME beginning
+echo "Archiving AMD: $AMDNAME beginning"
 
 # check if data folder exists, create if needed.
 if [ ! -d "$AMDDIR" ]; then
@@ -66,8 +75,10 @@ fi
 
 # Get data file listing from AMD, try 3 times, abort (FATAL) if failed
 fail=0
-for i in 1 2 3; do
+for i in 1,2,3; do
+	set +e
 	test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_dir | $GUNZIP > $AMDDIR/currdir.lst
+	set -e
 	if [ $? -ne 0 ]; then
 		echo -e "\e[31m***FATAL:\e[0m Can not download directory listing from AMD: $AMDNAME try: ${i}" >&2
 		fail=$((fail + 1))
@@ -97,11 +108,15 @@ while read p; do
 		fi
 		file=$AMDDIR/$year/$month/$day/${p}
 
+		if [ -r "$file" ]; then continue; fi	# already exists skip downloading
+
 	        debugecho "Downloading ${p} from $AMDNAME to $file"
 		# Try download 3 times
 		warn=0
-		for i in 1 2 3 ; do
+		for i in 1,2,3 ; do
+			set +e
 			test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_entry\&entry=${p} | $GUNZIP > $file
+			set -e
 			if [ $? -ne 0 ]; then
 				warn=$((warn + 1))
 	        		echo -e "\e[33m***WARNING:\e[39m Can not download file: ${p} from AMD: $AMDNAME try: ${i}" >&2
