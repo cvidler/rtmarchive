@@ -8,6 +8,10 @@
 # url: url to use to connect tot he AMD, include logon credentials
 # basedir: where to save stuff.
 
+
+
+# Script below do not edit
+
 AMDNAME=$1
 URL=$2
 BASEDIR=$3
@@ -24,13 +28,13 @@ function test {
 	"$@"
 	local status=$?
 	if [ $status -ne 0 ]; then
-		echo -e "\e[33m***WARNING:\e[0m Non-zero exit code $status for '$@'" >&2
+		if [ $DEBUG -ne 0 ]; then echo -e "\e[33m***WARNING:\e[0m Non-zero exit code $status for '$@'" >&2; fi
 	fi
 	return $status
 }
 
 function debugecho {
-	if [ $DEBUG -ne 0 ]; then echo "$@"; fi
+	if [ $DEBUG -ne 0 ]; then echo -e "$@"; fi
 }
 
 
@@ -40,12 +44,12 @@ echo Archiving AMD: $AMDNAME beginning
 # check if data folder exists, create if needed.
 if [ ! -d "$AMDDIR" ]; then
 	mkdir "$AMDDIR"
-	echo ***NOTE Created AMD data folder $AMDDIR.
+	debugecho "***NOTE Created AMD data folder $AMDDIR."
 fi
 
 # check access to data folder
 if [ ! -w "$AMDDIR" ]; then
-	echo -e "\e[31m***FATAL:\e[0m Cannot write to $AMDDIR Aborting."
+	echo -e "\e[31m***FATAL:\e[0m Cannot write to $AMDDIR Aborting." >&2
 	exit 1
 fi
 
@@ -65,7 +69,7 @@ fail=0
 for i in 1 2 3; do
 	test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_dir | $GUNZIP > $AMDDIR/currdir.lst
 	if [ $? -ne 0 ]; then
-		echo -e "\e[31m***FATAL:\e[0m $? Can not download directory listing from AMD: $AMDNAME try: ${i}"
+		echo -e "\e[31m***FATAL:\e[0m Can not download directory listing from AMD: $AMDNAME try: ${i}" >&2
 		fail=$((fail + 1))
 	else
 		break
@@ -100,7 +104,7 @@ while read p; do
 			test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_entry\&entry=${p} | $GUNZIP > $file
 			if [ $? -ne 0 ]; then
 				warn=$((warn + 1))
-	        		echo -e "\e[33m***WARNING:\e[39m $? Can not download file: ${p} from AMD: $AMDNAME try: ${i}"
+	        		echo -e "\e[33m***WARNING:\e[39m Can not download file: ${p} from AMD: $AMDNAME try: ${i}" >&2
 			else
 				downloaded=$((downloaded + 1))
 				break
@@ -124,8 +128,8 @@ while read p; do
 					OLDUUID=${k}
 				done < $AMDDIR/uuid.lst
 				if [ ! "$OLDUUID" == "$UUID" ]; then
-					echo -e "\e[33m***WARNING:\e[39m UUID Mismatch on AMD: $AMDNAME, Old: $OLDUUID, New: $UUID"
-					echo -e "\e[33m***WARNING:\e[39m If this is expected remove file $AMDDIR/uuid.lst to clear the error"
+					echo -e "\e[33m***WARNING:\e[39m UUID Mismatch on AMD: $AMDNAME, Old: $OLDUUID, New: $UUID" >&2
+					echo -e "\e[33m***WARNING:\e[39m If this is expected remove file $AMDDIR/uuid.lst to clear the error" >&2
 				fi
 			fi
 	
@@ -134,7 +138,7 @@ while read p; do
 			#echo $TS >> $AMDDIR/timestamps.lst
 		fi
 	else
-		echo -e "\e[33m***WARNING:\e[39m Unknown file: ${p} on AMD: $AMDNAME"
+		debugecho "\e[33m***WARNING:\e[39m Unknown file: ${p} on AMD: $AMDNAME" >&2
 	fi
 done < <($AWK 'NR==FNR{a[$1]++;next;}!($0 in a)' $AMDDIR/prevdir.lst $AMDDIR/currdir.lst)
 
