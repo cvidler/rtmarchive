@@ -78,13 +78,13 @@ fail=0
 for i in 1,2,3; do
 	set +e
 	test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_dir | $GUNZIP > $AMDDIR/currdir.lst
-	set -e
 	if [ $? -ne 0 ]; then
 		echo -e "\e[31m***FATAL:\e[0m Can not download directory listing from AMD: $AMDNAME try: ${i}" >&2
 		fail=$((fail + 1))
 	else
 		break
 	fi
+	set -e
 done
 if [ $fail -ne 0 ]; then exit 1; fi
 
@@ -116,7 +116,6 @@ while read p; do
 		for i in 1,2,3 ; do
 			set +e
 			test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_entry\&entry=${p} | $GUNZIP > $file
-			set -e
 			if [ $? -ne 0 ]; then
 				warn=$((warn + 1))
 	        		echo -e "\e[33m***WARNING:\e[39m Can not download file: ${p} from AMD: $AMDNAME try: ${i}" >&2
@@ -124,6 +123,7 @@ while read p; do
 				downloaded=$((downloaded + 1))
 				break
 			fi
+			set -e
 		done
 		if [ $warn -ne 0 ]; then warnings=$((warnings + 1)); fi
 	
