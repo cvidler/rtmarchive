@@ -29,6 +29,10 @@ function debugecho {
         if [ $DEBUG -ne 0 ]; then echo -e "$@"; fi
 }
 
+
+echo -e "rtmarchive Archive Management Script"
+echo -e "Starting"
+
 #list contents of BASEDIR for 
 for DIR in "$BASEDIR"/*; do
 	# only interested if it's got AMD data in it
@@ -61,37 +65,41 @@ for DIR in "$BASEDIR"/*; do
 						$AWK -F" " '$1=="U" { a[$6]++ } END { for (b in a) {print b} }' $ZDATA >> $DAY/serverports.lst.tmp
 						updated=1
 					done
-				else
-					debugecho "\e[33m***WARNING:\e[0m No zdata files in: $DAY."
-				fi
 
-				if [ $updated -ne 0 ]; then
-					# de-dupe data files
-					for file in softwareservice.lst serverips.lst clientips.lst serverports.lst; do
-						$AWK '!seen[$0]++' $DAY/$file.tmp > $DAY/$file
-						rm $DAY/$file.tmp
-					done
-				fi
+					if [ $updated -ne 0 ]; then
+						# de-dupe data files
+						for file in softwareservice.lst serverips.lst clientips.lst serverports.lst; do
+							$AWK '!seen[$0]++' $DAY/$file.tmp > $DAY/$file
+							rm $DAY/$file.tmp
+						done
+					fi
 
-				# archive it all, if not todays data (assumes incomplete, finish it tomorrow)
-				if [ `$DATE +%Y%m%d` -gt `$DATE -d $DATADATE +%Y%m%d` ]; then 
-					ARCNAME=$AMDNAME-$DATADATE.tar.bz2
-					$TAR -cjf $MONTH/$ARCNAME $DAY/*
-					if [ $? -eq 0 ]; then
-						#succesful
-						$MD5SUM $MONTH/$ARCNAME > $MONTH/$ARCNAME.md5
-						#rm -f $DAY/*
+					# archive it all, if not todays data (assumes incomplete, finish it tomorrow)
+					if [ `$DATE +%Y%m%d` -gt `$DATE -d $DATADATE +%Y%m%d` ]; then 
+						ARCNAME=$AMDNAME-$DATADATE.tar.bz2
+						$TAR -cjf $MONTH/$ARCNAME $DAY/* >&2
+						if [ $? -eq 0 ]; then
+							#succesful
+							$MD5SUM $MONTH/$ARCNAME > $MONTH/$ARCNAME.md5
+							rm -f $DAY/*data_* $DAY/page2transmap_*
+						else
+							#failed
+							echo -e "\e[33m***WARNING:\e[0m Couldn't archive data files in: $DAY, will try again next time."
+						fi
 					else
-						#failed
-						echo -e "\e[33m***WARNING:\e[0m Couldn't archive data files in: $DAY, will try again next time."
+						debugecho "$DATADATE = today, not archiving"
 					fi
 				else
-					debugecho "$DATADATE = today, not archiving"
+					debugecho "\e[33m***WARNING:\e[0m No zdata files in: $DAY."
 				fi
 
 			done
 		done 
 	done
 done
+
+echo -e "rtmarchive Archive Management Script"
+echo -e "Complete"
+
 
 

@@ -96,7 +96,7 @@ warnings=0
 while read p; do
 
 	# Validate file name is something we want.
-	if [ "`echo ${p} | $AWK ' /[a-z0-9]+_[0-9a-f]+_[150a]+_[tb]/ '`" == "${p}" ]; then
+	if [ "`echo ${p} | $AWK ' /[a-z0-9]+_[0-9a-f]+_[150a]+_[tb].*/ '`" == "${p}" ]; then
 	 	# Extract date codes from file name	
 		year=`echo ${p} | $AWK -F"_" ' { print strftime("%Y",strtonum("0x"$2),1); } '`
 		month=`echo ${p} | $AWK -F"_" ' { print strftime("%m",strtonum("0x"$2),1); } '`
