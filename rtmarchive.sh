@@ -8,7 +8,7 @@
 AMDLIST=amdlist.cfg
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=~/rtmarchive
-DEBUG=1
+DEBUG=${1:-0}
 
 
 
