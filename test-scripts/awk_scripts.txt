@@ -71,3 +71,7 @@ Process AMD List file:
 awk -F"," '$1=="A" { print $3","$2 }'
 
 
+Extract file names from tar archvie:
+tar -tvf archivefile | awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '
+
+
