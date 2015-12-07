@@ -24,8 +24,6 @@ WGET=`which wget`
 GUNZIP=`which gunzip`
 TOUCH=`which touch`
 
-#echo $AMDNAME, $URL, $BASEDIR
-
 function test {
 	set +e
 	"$@"
@@ -43,9 +41,17 @@ function debugecho {
 
 
 #check passed parameters
+
+debugecho "***DEBUG: Parameters [$AMDNAME], [$URL], [$BASEDIR], [$DEBUG]"
+
 if [ -z "$AMDNAME" ]; then
-	echo -e "\e[31m***FATAL:\e[0m parameter not supplied Aborting."
+	echo -e "\e[31m***FATAL:\e[0m AMDNAME parameter not supplied. Aborting." >&2
 	exit 1
+fi
+
+if [ -z "$URL" ]; then
+        echo -e "\e[31m***FATAL:\e[0m URL parameter not supplied. Aborting." >&2
+        exit 1
 fi
 
 echo "Archiving AMD: $AMDNAME beginning"
@@ -53,23 +59,24 @@ echo "Archiving AMD: $AMDNAME beginning"
 # check if data folder exists, create if needed.
 if [ ! -d "$AMDDIR" ]; then
 	mkdir "$AMDDIR"
-	debugecho "***NOTE Created AMD data folder $AMDDIR."
+	debugecho "***DEBUG: Created AMD data folder $AMDDIR."
 fi
 
 # check access to data folder
 if [ ! -w "$AMDDIR" ]; then
-	echo -e "\e[31m***FATAL:\e[0m Cannot write to $AMDDIR Aborting." >&2
+	echo -e "\e[31m***FATAL:\e[0m Cannot write to $AMDDIR. Aborting." >&2
 	exit 1
 fi
 
 # check for existing previous data file list, touch it if needed, so we can download everything.
 if [ ! -r "$AMDDIR/prevdir.lst" ]; then
 	touch "$AMDDIR/prevdir.lst"
-	echo newfile > "$AMDDIR/prevdir.lst"
+	echo "newfile" > "$AMDDIR/prevdir.lst"
 fi
 
 # check for existing current data file list (there shouldn't be one if the script works, remove it)
 if [ -f "$AMDDIR/currdir.lst" ]; then
+	debugecho "***DEBUG: Found stale currdidr.lst. Removing it."
 	rm "$AMDDIR/currdir.lst"
 fi
 
@@ -86,7 +93,7 @@ for i in 1 2 3; do
 	fi
 	set -e
 done
-if [ $fail -ne 0 ]; then exit 1; fi
+if [ $fail -ne 0 ]; then echo -e "\e[31m***FATAL:\e[0m Could not download directory listing from AMD: $AMDNAME Aborting." >&2 ; exit 1; fi
 
 
 downloaded=0
@@ -103,14 +110,16 @@ while read p; do
 		day=`echo ${p} | $AWK -F"_" ' { print strftime("%d",strtonum("0x"$2),1); } '`
 		#echo ${file},$year,$month,$day 
 		# Check for correct folder structure - create if needed
-		if [ ! -w "$AMDDIR/$year/$month/$day/" ]; then
-			mkdir -p "$AMDDIR/$year/$month/$day/"
+		ARCDIR=$AMDDIR/$year/$month/$day/
+		if [ ! -w "$ARCDIR" ]; then
+			debugecho "***DEBUG: Creating archive directory: $ARCDIR"
+			mkdir -p "$ARCDIR"
 		fi
-		file=$AMDDIR/$year/$month/$day/${p}
+		file=$ARCDIR/${p}
 
 		if [ -r "$file" ]; then continue; fi	# already exists skip downloading
 
-	        debugecho "Downloading ${p} from $AMDNAME to $file"
+	        debugecho "***DEBUG: Downloading ${p} from $AMDNAME to $file"
 		# Try download 3 times
 		warn=0
 		for i in 1 2 3 ; do
@@ -118,14 +127,14 @@ while read p; do
 			test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_entry\&entry=${p} | $GUNZIP > $file
 			if [ $? -ne 0 ]; then
 				warn=$((warn + 1))
-	        		echo -e "\e[33m***WARNING:\e[39m Can not download file: ${p} from AMD: $AMDNAME try: ${i}" >&2
+	        		debugecho "\e[33m***WARNING:\e[39m Can not download file: ${p} from AMD: $AMDNAME try: ${i}" >&2
 			else
 				downloaded=$((downloaded + 1))
 				break
 			fi
 			set -e
 		done
-		if [ $warn -ne 0 ]; then warnings=$((warnings + 1)); fi
+		if [ $warn -ne 0 ]; then echo -e "\e[33m***WARNING:\e[39m Could not download file: ${p} from AMD: $AMDNAME" >&2 : warnings=$((warnings + 1)); fi
 	
 		# Set file timestamp correctly
 		# extract timestamp from file name and convert it to require format CCYYMMDDhhmm.SS
@@ -164,9 +173,5 @@ mv $AMDDIR/currdir.lst $AMDDIR/prevdir.lst
 
 echo -ne "Archiving AMD: $AMDNAME complete, downloaded $downloaded"
 if [ $warnings -ne 0 ]; then echo -e " - \e[33mWarnings: $warnings\e[0m"; fi
-echo
-
-
-
-
+echo -e ""
 
