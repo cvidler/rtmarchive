@@ -6,6 +6,7 @@ Requirements:
 - gawk
 - wget
 - which
+- mktemp
 - gunzip
 - touch
 - cat

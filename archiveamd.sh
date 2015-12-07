@@ -23,6 +23,7 @@ AWK=`which awk`
 WGET=`which wget`
 GUNZIP=`which gunzip`
 TOUCH=`which touch`
+MKTEMP=`which mktemp`
 
 function test {
 	set +e
@@ -82,17 +83,20 @@ fi
 
 # Get data file listing from AMD, try 3 times, abort (FATAL) if failed
 fail=0
+tmpfile=`$MKTEMP`
 for i in 1 2 3; do
 	set +e
-	test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_dir | $GUNZIP > $AMDDIR/currdir.lst
+	$WGET --quiet --no-check-certificate -O "$tmpfile" $URL/RtmDataServlet?cmd=zip_dir
 	if [ $? -ne 0 ]; then
 		echo -e "\e[31m***FATAL:\e[0m Can not download directory listing from AMD: $AMDNAME try: ${i}" >&2
 		fail=$((fail + 1))
 	else
+		cat $tmpfile | gunzip -c > $AMDDIR/currdir.lst
 		break
 	fi
 	set -e
 done
+rm $tmpfile
 if [ $fail -ne 0 ]; then echo -e "\e[31m***FATAL:\e[0m Could not download directory listing from AMD: $AMDNAME Aborting." >&2 ; exit 1; fi
 
 
@@ -122,19 +126,22 @@ while read p; do
 	        debugecho "***DEBUG: Downloading ${p} from $AMDNAME to $file"
 		# Try download 3 times
 		warn=0
+		tmpfile=`$MKTEMP`
 		for i in 1 2 3 ; do
 			set +e
-			test $WGET --quiet --no-check-certificate -O - $URL/RtmDataServlet?cmd=zip_entry\&entry=${p} | $GUNZIP > $file
+			$WGET --quiet --no-check-certificate -O "$tmpfile" $URL/RtmDataServlet?cmd=zip_entry\&entry=${p} 
 			if [ $? -ne 0 ]; then
 				warn=$((warn + 1))
 	        		debugecho "\e[33m***WARNING:\e[39m Can not download file: ${p} from AMD: $AMDNAME try: ${i}" >&2
 			else
+				cat $tmpfile | gunzip -c > $file
 				downloaded=$((downloaded + 1))
 				break
 			fi
 			set -e
 		done
-		if [ $warn -ne 0 ]; then echo -e "\e[33m***WARNING:\e[39m Could not download file: ${p} from AMD: $AMDNAME" >&2 : warnings=$((warnings + 1)); fi
+		rm $tmpfile
+		if [ $warn -ne 0 ]; then echo -e "\e[33m***WARNING:\e[39m Could not download file: ${p} from AMD: $AMDNAME" >&2 ; warnings=$((warnings + 1)); fi
 	
 		# Set file timestamp correctly
 		# extract timestamp from file name and convert it to require format CCYYMMDDhhmm.SS
