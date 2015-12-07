@@ -12,32 +12,43 @@
 </head>
 <body>
 <h1>rtmarchive System</h1>
-<p>Chris Vidler - Dynatrace DCRUM SME 2015</p>
+<h6>Chris Vidler - Dynatrace DCRUM SME 2015</h6>
 
 <h2>AMD Sources</h2>
-<ul>
+<ul class="list">
 <?php
 	$basedir = scandir(BASEDIR);
 	foreach ($basedir as $amd) {
 		if (file_exists(BASEDIR.$amd."/prevdir.lst")) {
-			echo "<li><a href=\"?amd=".$amd."\">".$amd."</a>\n";
+			echo " <li><a>".$amd."</a>\n";
 			$years = scandir(BASEDIR.$amd);
-			echo "<ul>\n";
 			foreach ($years as $year) {
 				if ( is_numeric($year) ) {
-					echo "<li><a href=\"?amd=".$amd."&year=".$year.">".$year."</a>\n";
-					echo "<br>\n";
+					echo "  <ul>\n";
+					echo "   <li><a href=\"?amd=".$amd."&year=".$year."\">".$year."</a>\n";
+					echo "    <ul/>\n";
 					$months = scandir(BASEDIR.$amd."/".$year);
 					foreach ($months as $month) {
 						if ( is_numeric($month) ) {
-							echo "a href=\"?amd=".$amd."&year=".$year."&month=".$month."\">".date_format(date_create($year."-".$month."-01"),"M")."</a> ";
+							echo "     <li><a href=\"?amd=".$amd."&year=".$year."&month=".$month."\">";
+							echo date_format(date_create($year."-".$month."-01"),"M")."</a>\n";
+							echo "      <ul>\n";
+							$days = scandir(BASEDIR.$amd."/".$year."/".$month);
+							foreach ($days as $day) {
+								if ( is_numeric($day) ) {
+									echo "       <li><a href=\"?amd=$amd&year=$year&month=$month&day=$day\">".$day."</a></li>\n";
+								}
+							}
+							echo "      </ul>\n";
+							echo "     </li>\n";
 						}
 					}
-					echo "</li>\n";
+					echo "    </ul>\n";
+					echo "   </li>\n";
+					echo "  </ul>\n";
 				}
 			}
-			echo "</ul>\n";
-			echo "</ul>\n";
+		echo " </li>\n";
 		}
 	}
 ?>
