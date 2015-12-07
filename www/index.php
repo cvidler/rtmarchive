@@ -18,9 +18,26 @@
 <ul>
 <?php
 	$basedir = scandir(BASEDIR);
-	foreach ($basedir as $dir) {
-		if (file_exists(BASEDIR.$dir."/prevdir.lst")) {
-			echo "<li>".$dir."</ul>\n";
+	foreach ($basedir as $amd) {
+		if (file_exists(BASEDIR.$amd."/prevdir.lst")) {
+			echo "<li><a href=\"?amd=".$amd."\">".$amd."</a>\n";
+			$years = scandir(BASEDIR.$amd);
+			echo "<ul>\n";
+			foreach ($years as $year) {
+				if ( is_numeric($year) ) {
+					echo "<li><a href=\"?amd=".$amd."&year=".$year.">".$year."</a>\n";
+					echo "<br>\n";
+					$months = scandir(BASEDIR.$amd."/".$year);
+					foreach ($months as $month) {
+						if ( is_numeric($month) ) {
+							echo "a href=\"?amd=".$amd."&year=".$year."&month=".$month."\">".date_format(date_create($year."-".$month."-01"),"M")."</a> ";
+						}
+					}
+					echo "</li>\n";
+				}
+			}
+			echo "</ul>\n";
+			echo "</ul>\n";
 		}
 	}
 ?>
