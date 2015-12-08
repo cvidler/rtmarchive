@@ -163,10 +163,6 @@ while read p; do
 					echo -e "\e[33m***WARNING:\e[39m If this is expected remove file $AMDDIR/uuid.lst to clear the error" >&2
 				fi
 			fi
-	
-			# get TS from zdata, keep record of all timestamps we have archived.
-			#TS=`$AWK -F" " '$1=="#TS:" { print $2 }' $file` 
-			#echo $TS >> $AMDDIR/timestamps.lst
 		fi
 	else
 		debugecho "\e[33m***WARNING:\e[39m Unknown file: ${p} on AMD: $AMDNAME" >&2
