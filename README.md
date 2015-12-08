@@ -12,7 +12,8 @@ Requirements:
 - cat
 - wc
 - date
-- md5sum
+- chmod
+- sha512sum
 - php >= 5.4
 
 Tested against:

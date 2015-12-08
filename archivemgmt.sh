@@ -21,7 +21,7 @@ CAT=`which cat`
 TAR=`which tar`
 BZIP2=`which bzip2`
 DATE=`which date`
-MD5SUM=`which md5sum`
+SHA512SUM=`which sha512sum`
 
 
 
@@ -87,7 +87,8 @@ for DIR in "$BASEDIR"/*; do
 					$TAR -cjf "$MONTH"/$ARCNAME "$DAY"/* >&2
 					if [ $? -eq 0 ]; then
 						#succesful, checksum the archive and clean up data files
-						$MD5SUM $MONTH/$ARCNAME > $MONTH/$ARCNAME.md5
+						$SHA512SUM $MONTH/$ARCNAME > $MONTH/$ARCNAME.sha512
+						chmod -w $ARCNAME $ARCNAME.sha512
 						rm -f "$DAY"/*data_* "$DAY"/vdataidx_* "$DAY"/page2transmap_*
 					else
 						#failed

@@ -30,10 +30,20 @@
         	        $file = fopen($filename,"r");
                 	$data = str_replace("\n","<br/>",htmlspecialchars(urldecode(fread($file, filesize($filename)))));
 	                fclose($file);
+		} elseif ($dataset == "fi") {
+			$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2.sha512";
+			//chdir(BASEDIR.$amd."/".$year."/".$month."/");
+			$retval = "";
+			$retval = exec('sha512sum --status -c "'.$arcname.'" ; echo $?');
+			if ($retval) {
+				$data = "Archive integrity check: <b>FAILED</b><br/>";
+			} else {
+				$data = "Archive integrity check: OK<br/>";
+			}
 		} else {
 			$data = "";
 		}
-
+		if ( $data == "" ) { $data = "No Data Available.<br/>"; }
 		return $data;
 	}
 
@@ -127,6 +137,14 @@
 
 	                                                                                echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=cip")."\">Client IP Addresses</a></br>";
 										}
+                                                                               if ( $linkopts['dataset'] == "fi") {
+                                                                                        echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi")."\"><b>Archive Integrity Check</b></a></br>";
+                                                                                        echo getdaydata($amd, $year, $month, $day, "fi");
+                                                                                } else {
+
+                                                                                        echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi")."\">Archive Integrity Check</a></br>";
+                                                                                }
+
 									} 
 									else { 
 										echo $day."</a></li>"; }
