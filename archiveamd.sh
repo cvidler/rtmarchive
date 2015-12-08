@@ -146,7 +146,7 @@ while read p; do
 		# Set file timestamp correctly
 		# extract timestamp from file name and convert it to require format CCYYMMDDhhmm.SS
 		FTS=`echo ${p} | $AWK -F"_" ' { print strftime("%Y%m%d%H%M.%S",strtonum("0x"$2),1); } '`
-		$TOUCH -c -t $FTS  "$file"
+		`TZ=UTC $TOUCH -c -t $FTS  "$file"`
 	
 		# Proces contents here
 		if [[ ${p} =~ zdata_.* ]]; then
