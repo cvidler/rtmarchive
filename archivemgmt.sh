@@ -58,7 +58,11 @@ for DIR in "$BASEDIR"/*; do
 				set -e
 				updated=0
 				#if there's zdata (already archived) and it's not todays date (incomplete data), then archvie it
-				if [ $ZCOUNT -ne 0 ]; then if [ `$DATE +%Y%m%d` -gt `$DATE -d $DATADATE +%Y%m%d` ]; then
+				nowtime=$($DATE -u +"%s")
+				datatime=$($DATE -u -d "$DATADATE" +"%s")
+				archivedelay=$(($nowtime-$datatime))
+				debugecho "***DEBUG: archivedelay=$archivedelay" 
+				if [ $ZCOUNT -ne 0 ]; then if [ $archivedelay -gt 86400 ]; then
 					for ZDATA in $DAY/zdata_*; do
 						debugecho "***DEBUG: Processing: $ZDATA"
 						$AWK -F" " '$1=="#TS:" { print $2","strftime("%c",strtonum("0x"$2),1); }' "$ZDATA" >> "$DAY"/timestamps.lst.tmp
@@ -90,7 +94,7 @@ for DIR in "$BASEDIR"/*; do
 						echo -e "\e[33m***WARNING:\e[0m Couldn't archive data files in: $DAY, will try again next time."
 					fi
 				else
-					debugecho "***DEBUG: $DATADATE = today, not archiving."
+					debugecho "***DEBUG: $DATADATE = today, not archiving yet."
 				fi
 				else
 					if [ ! -r "$DAY/softwareservice.lst" ]; then
