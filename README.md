@@ -13,6 +13,7 @@ Requirements:
 - wc
 - date
 - chmod
+- jobs
 - sha512sum
 - php >= 5.4
 

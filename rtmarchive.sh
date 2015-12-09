@@ -8,6 +8,7 @@
 AMDLIST=amdlist.cfg
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=~/rtmarchive
+MAXTHREADS=4
 DEBUG=${1:-0}
 
 
@@ -16,6 +17,8 @@ DEBUG=${1:-0}
 set -euo pipefail
 IFS=$',\n\t'
 AWK=`which awk`
+JOBS=`which jobs`
+WC=`which wc`
 
 # Some sanity checking of the config parameters above
 if [ ! -r "$AMDLIST" ]
@@ -47,6 +50,7 @@ echo -e "\e[2m`$AWK -F"," '$1=="D" { print " - " $3 " Disabled" } ' $AMDLIST`\e[
 echo
 
 $AWK -F"," '$1=="A" { print $3","$2 } ' $AMDLIST | ( while read p q; do 
+	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
 	echo -e "Launching amdarchive script for: ${p}"
 	$SCRIPTDIR/archiveamd.sh "${p}" "${q}" "$BASEDIR" $DEBUG &
 done; wait
