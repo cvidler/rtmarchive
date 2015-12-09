@@ -88,7 +88,7 @@ for DIR in "$BASEDIR"/*; do
 					if [ $? -eq 0 ]; then
 						#succesful, checksum the archive and clean up data files
 						$SHA512SUM $MONTH/$ARCNAME > $MONTH/$ARCNAME.sha512
-						chmod -w $ARCNAME $ARCNAME.sha512
+						chmod -w $MONTH/$ARCNAME $MONTH/$ARCNAME.sha512
 						rm -f "$DAY"/*data_* "$DAY"/vdataidx_* "$DAY"/page2transmap_*
 					else
 						#failed
