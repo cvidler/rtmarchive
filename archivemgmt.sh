@@ -78,6 +78,7 @@ for DIR in "$BASEDIR"/*; do
 						# de-dupe data files
 						for file in timestamps.lst softwareservice.lst serverips.lst clientips.lst serverports.lst; do
 							$AWK '!seen[$0]++' "$DAY"/$file.tmp > "$DAY"/$file
+							chmod -w "$DAY"/$file
 							rm "$DAY"/$file.tmp
 						done
 					fi
