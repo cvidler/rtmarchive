@@ -31,8 +31,11 @@ if ( is_dir(BASEDIR) ) {} else {
 	echo "***FATAL: ".BASEDIR." does not exist.\n";
 }
 
+
+$command = "";
 if ( isset( $_GET['cmd']) ) { $command = $_GET['cmd']; }
 if ( isset( $_GET['cfg_oper']) ) { $command = $_GET['cfg_oper']; }
+if ( isset( $_SERVER['QUERY_STRING']) ) { if ( $_SERVER['QUERY_STRING'] == 'hid' ) { $command = "hid"; } }
 
 if ( $command == "" ) { exit;}		// unknown command
 
