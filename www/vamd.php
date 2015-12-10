@@ -25,6 +25,7 @@ define("PASS", "history");			// "
 
 
 // Code follows do not edit
+header_remove();
 
 if ( is_dir(BASEDIR) ) {} else {
 	echo "***FATAL: ".BASEDIR." does not exist.\n";
@@ -78,6 +79,11 @@ $archive = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$datadate.".tar.bz2";
 //check validity
 if ( ! file_exists($archive) ) { echo "***FATAL Archive: $archive does not exist. Aborting."; exit; }
 
+header("Cache-Control: private");
+header("Content-Type:");
+header("Server: Apache-Coyote/1.1");
+header("Expires: 1 Jan 1970 00:00:00 GMT");
+
 
 // main command selector
 if ( $command == "version" ) {
@@ -85,9 +91,9 @@ if ( $command == "version" ) {
 // time_stamp=1449719436906
 // os=Red Hat Enterprise Linux Server release 6.6 (Santiago)
 // instances=true
-	echo "D-RTM v. ndw.12.3.0.000 rtmarchive Emulated AMD\n";
-	echo "time_stamp=".`/usr/bin/date -u +%s%3N`."";
-	echo "os=".`/usr/bin/cat /etc/redhat-release`."";
+	echo "ND-RTM v. ndw.12.3.0.000 rtmarchive Emulated AMD\n";
+	echo "time_stamp=".str_replace(array("\r","\n"), "", `/usr/bin/date -u +%s%3N`)."\n";
+	echo "os=".str_replace(array("\r","\n"), "", `/usr/bin/cat /etc/redhat-release`)."\n";
 	echo "instances=true\n";
 	exit;
 
