@@ -31,13 +31,11 @@ if ( is_dir(BASEDIR) ) {} else {
 	echo "***FATAL: ".BASEDIR." does not exist.\n";
 }
 
-if (count($_GET)) {
-	$command = $_GET["cmd"];
-	//$instance = $_GET["instance"];
-	//$entry = $_GET["entry"];
-} else {
-	exit;
-}
+if ( isset( $_GET['cmd']) ) { $command = $_GET['cmd']; }
+if ( isset( $_GET['cfg_oper']) ) { $command = $_GET['cfg_oper']; }
+
+if ( $command == "" ) { exit;}		// unknown command
+
 
 
 // locate utils we need
@@ -50,8 +48,10 @@ $DATE = `which date`;
 $valid_passwords = array (USER => PASS);
 $valid_users = array_keys($valid_passwords);
 
-$user = $_SERVER['PHP_AUTH_USER'];
-$pass = $_SERVER['PHP_AUTH_PW'];
+$user = "";
+$pass = "";
+if ( isset($_SERVER['PHP_AUTH_USER']) ) { $user = $_SERVER['PHP_AUTH_USER']; }
+if ( isset($_SERVER['PHP_AUTH_PW']) ) { $pass = $_SERVER['PHP_AUTH_PW']; }
 
 $validated = (in_array($user, $valid_users)) && ($pass == $valid_passwords[$user]);
 
@@ -86,6 +86,8 @@ header("Expires: 1 Jan 1970 00:00:00 GMT");
 
 
 // main command selector
+
+// RtmDataServlet (the one we really want)
 if ( $command == "version" ) {
 // D-RTM v. ndw.12.3.0.791 Copyright (C) 1999-2011 Compuware Corp.
 // time_stamp=1449719436906
@@ -115,6 +117,41 @@ if ( $command == "version" ) {
         echo $data;
 	exit;
 
+
+//RtmConfigServlet - don't really care, just respond to stop RUMC complaining.
+} elseif ( $command == "get_cfg_dir" ) {
+	echo "daves_not_here_man\n";
+	exit;
+
+} elseif ( $command == "console_get" ) {
+	echo "\n";
+	exit;
+
+
+//DiagServlet - don't really care, just respond to stop RUMC complaining.
+} elseif ( $command == "get_status" ) {
+	echo "{\"modules\": {\n";
+	echo "\t\"module\": [\n";
+	echo "\t\t{\"name\": \"adlexv2page\", \"version\": \"12.4.0-18.el7\", \"statusBegin\": \"0\", \"statusEnd\": \"0\", \"installed\": \"3296181\", \"uptime\": \"168\"},\n";
+	echo "\t\t{\"name\": \"nfc\", \"version\": \"12.4.0-992.el7\", \"statusBegin\": \"4\", \"statusEnd\": \"7\", \"installed\": \"3296182\", \"uptime\": \"-1\"},\n";
+	echo "\t\t{\"name\": \"rtm\", \"version\": \"12.4.0-887.el7\", \"statusBegin\": \"4\", \"statusEnd\": \"7\", \"installed\": \"3296180\", \"uptime\": \"-1\"},\n";
+	echo "\t\t{\"name\": \"adlexpage2trans\", \"version\": \"12.4.0-24.el7\", \"statusBegin\": \"0\", \"statusEnd\": \"0\", \"installed\": \"3296181\", \"uptime\": \"168\"},\n";
+	echo "\t\t{\"name\": \"rtmgate\", \"version\": \"12.4.0-54.el7\", \"statusBegin\": \"0\", \"statusEnd\": \"0\", \"installed\": \"3296198\", \"uptime\": \"162\"},\n";
+	echo "\t\t{\"name\": \"cba\", \"version\": \"12.4.0-992.el7\", \"statusBegin\": \"4\", \"statusEnd\": \"7\", \"installed\": \"3296183\", \"uptime\": \"-1\"},\n";
+	echo "\t\t{\"name\": \"cba-agent\", \"version\": \"12.4.0-6.el7\", \"statusBegin\": \"4\", \"statusEnd\": \"7\", \"installed\": \"3296178\", \"uptime\": \"-1\"},\n";
+	echo "\t\t{\"name\": \"adlexrtm\", \"version\": \"ndw.12.4.0.992-1.el7\", \"statusBegin\": \"0\", \"statusEnd\": \"6\", \"installed\": \"3296192\", \"uptime\": \"168\"}\n";
+	echo "\t]\n";
+	echo "}}\n";
+	exit;
+
+
+//hid - ???
+} elseif ( $command == "hid" ) {
+	echo "5d2d6916f8713b91\n";
+	exit;
+
+
+// catchall
 } else {
 	//invalid/unsupported command
 	exit;
