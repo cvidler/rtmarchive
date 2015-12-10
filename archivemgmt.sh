@@ -9,7 +9,7 @@
 # Config
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=~/rtmarchive
-
+MAXTHREADS=1
 
 
 # Script below do not edit
@@ -22,20 +22,21 @@ TAR=`which tar`
 BZIP2=`which bzip2`
 DATE=`which date`
 SHA512SUM=`which sha512sum`
-
-
+JOBS=`which jobs`
+WC=`which wc`
 
 
 function debugecho {
         if [ $DEBUG -ne 0 ]; then echo -e "$@"; fi
 }
 
-
 echo -e "rtmarchive Archive Management Script"
 echo -e "Starting"
 
 #list contents of BASEDIR for 
 for DIR in "$BASEDIR"/*; do
+	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
+	(
 	# only interested if it's got AMD data in it
 	if [ ! -r "$DIR/prevdir.lst" ]; then continue; fi
 	AMDNAME=`echo $DIR | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `
@@ -109,6 +110,8 @@ for DIR in "$BASEDIR"/*; do
 			done
 		done 
 	done
+	)
+
 done
 
 echo -e "rtmarchive Archive Management Script"

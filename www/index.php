@@ -48,6 +48,7 @@
 	}
 
 	//init linkopts variables
+	$linkopts['rand'] = "";
 	$linkopts['amd'] = "";
 	$linkopts['year'] = "";
 	$linkopts['month'] = "";
@@ -67,6 +68,11 @@
 	}
 	}
 
+
+	function randnum() {
+		return mt_rand();
+	}
+
 	//print_r($linkopts);
 	
 ?>
@@ -84,21 +90,21 @@
 	$basedir = scandir(BASEDIR);
 	foreach ($basedir as $amd) {
 		if (file_exists(BASEDIR.$amd."/prevdir.lst")) {
-			echo " <li><a href=\"?link=".base64_encode("amd=".$amd)."\">";
+			echo " <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd)."\">";
 			if ( $linkopts['amd'] == $amd ) { echo "<b>".$amd."</b>";} else { echo $amd; }
 			echo "</a>\n";
 			$years = scandir(BASEDIR.$amd);
 			foreach ($years as $year) {
 				if ( is_numeric($year) ) {
 					echo "  <ul>\n";
-					echo "   <li><a href=\"?link=".base64_encode("amd=".$amd."&year=".$year)."\">";
+					echo "   <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year)."\">";
 					if ( $linkopts['amd'] == $amd && $linkopts['year'] == $year ) { echo "<b>".$year."</b>";} else { echo $year; }
 					echo "</a>\n";
 					echo "    <ul/>\n";
 					$months = scandir(BASEDIR.$amd."/".$year);
 					foreach ($months as $month) {
 						if ( is_numeric($month) ) {
-							echo "     <li><a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month)."\">";
+							echo "     <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month)."\">";
 							if ( $linkopts['amd'] == $amd && $linkopts['year'] == $year && $linkopts['month'] == $month) { 
 								echo "<b>".date_format(date_create($year."-".$month."-01"),"M")."</b>";} 
 							else { 
@@ -108,46 +114,46 @@
 							$days = scandir(BASEDIR.$amd."/".$year."/".$month);
 							foreach ($days as $day) {
 								if ( is_numeric($day) && file_exists(BASEDIR.$amd."/".$year."/".$month."/".$day."/softwareservice.lst" ) ) {
-									echo "       <li><a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day)."\">";
+									echo "       <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day)."\">";
 									if ( $linkopts['amd'] == $amd && $linkopts['year'] == $year && $linkopts['month'] == $month && $linkopts['day'] == $day) { 
-										echo "<b>".$day."</b></a><br/>";
+										echo "<b>".$day."</b></a><br/>\n";
 										if ( $linkopts['dataset'] == "ts") {
-											echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ts")."\"><b>Time Stamps</b></a></br>";
-											echo getdaydata($amd, $year, $month, $day, "ts");
+											echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ts")."\"><b>Time Stamps</b></a></br>\n";
+											echo getdaydata($amd, $year, $month, $day, "ts")."\n";
 										} else {
-                                                                                        echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ts")."\">Time Stamps</a></br>";
+                                                                                        echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ts")."\">Time Stamps</a></br>\n";
 										}
 										if ( $linkopts['dataset'] == "ss") {
-                                                                                        echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ss")."\"><b>Software Services</b></a></br>";
-                                                                                        echo getdaydata($amd, $year, $month, $day, "ss");
+                                                                                        echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ss")."\"><b>Software Services</b></a></br>\n";
+                                                                                        echo getdaydata($amd, $year, $month, $day, "ss")."\n";
                                                                                 } else {
-                                                                                        echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ss")."\">Software Services</a></br>";
+                                                                                        echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ss")."\">Software Services</a></br>\n";
 										} 
 										if ( $linkopts['dataset'] == "sip") {
-                                                                                        echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=sip")."\"><b>Server IP Addresses</b></a></br>";
-                                                                                        echo getdaydata($amd, $year, $month, $day, "sip");
+                                                                                        echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=sip")."\"><b>Server IP Addresses</b></a></br>\n";
+                                                                                        echo getdaydata($amd, $year, $month, $day, "sip")."\n";
                                                                                 } else {
-											echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=sip")."\">Server IP Addresses</a></br>";
+											echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=sip")."\">Server IP Addresses</a></br>\n";
 
 										} 
 										if ( $linkopts['dataset'] == "cip") {
-                                                                                        echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=cip")."\"><b>Client IP Addresses</b></a></br>";
-                                                                                        echo getdaydata($amd, $year, $month, $day, "cip");
+                                                                                        echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=cip")."\"><b>Client IP Addresses</b></a></br>\n";
+                                                                                        echo getdaydata($amd, $year, $month, $day, "cip")."\n";
                                                                                 } else {
 
-	                                                                                echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=cip")."\">Client IP Addresses</a></br>";
+	                                                                                echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=cip")."\">Client IP Addresses</a></br>\n";
 										}
                                                                                if ( $linkopts['dataset'] == "fi") {
-                                                                                        echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi")."\"><b>Archive Integrity Check</b></a></br>";
-                                                                                        echo getdaydata($amd, $year, $month, $day, "fi");
+                                                                                        echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi")."\"><b>Archive Integrity Check</b></a></br>\n";
+                                                                                        echo getdaydata($amd, $year, $month, $day, "fi")."\n";
                                                                                 } else {
 
-                                                                                        echo "<a href=\"?link=".base64_encode("amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi")."\">Archive Integrity Check</a></br>";
+                                                                                        echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi")."\">Archive Integrity Check</a></br>\n";
                                                                                 }
 
 									} 
 									else { 
-										echo $day."</a></li>"; }
+										echo $day."</a></li>\n"; }
 								}
 							}
 							echo "      </ul>\n";
