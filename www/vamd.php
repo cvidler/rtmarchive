@@ -29,15 +29,18 @@ header_remove();
 
 if ( is_dir(BASEDIR) ) {} else {
 	echo "***FATAL: ".BASEDIR." does not exist.\n";
+	http_response_code(500);
+	exit;
 }
 
 
+// figure out what we're meant to do...
 $command = "";
 if ( isset( $_GET['cmd']) ) { $command = $_GET['cmd']; }
 if ( isset( $_GET['cfg_oper']) ) { $command = $_GET['cfg_oper']; }
 if ( isset( $_SERVER['QUERY_STRING']) ) { if ( $_SERVER['QUERY_STRING'] == 'hid' ) { $command = "hid"; } }
 
-if ( $command == "" ) { exit;}		// unknown command
+if ( $command == "" ) { echo "***FATAL: No command. Aborting."; http_response_code(400); exit; }		// unknown command
 
 
 
@@ -80,7 +83,7 @@ $datadate = $year."-".$month."-".$day;
 $archive = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$datadate.".tar.bz2";
 
 //check validity
-if ( ! file_exists($archive) ) { echo "***FATAL Archive: $archive does not exist. Aborting."; exit; }
+if ( ! file_exists($archive) ) { $noarchive = 1; }
 
 header("Cache-Control: private");
 header("Content-Type:");
@@ -107,12 +110,14 @@ if ( $command == "version" ) {
 	exit;
 
 } elseif (( $command == "get_dir" ) || ( $command == "zip_dir" ))  {
+	if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
 	$data = `/usr/bin/tar -tf "$archive" | /usr/bin/awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '`;
 	if ( $command == "zip_dir" ) { $data = gzencode($data); }
 	echo $data;
 	exit;
 
 } elseif (( $command == "get_entry" ) || ( $command == "zip_entry" ))  {
+	if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
 	$entry = $_GET["entry"];
 	if ( $entry == "" ) { exit; }
 	$data = `/usr/bin/tar -Oxf "$archive" "*/$entry"`;
@@ -123,7 +128,7 @@ if ( $command == "version" ) {
 
 //RtmConfigServlet - don't really care, just respond to stop RUMC complaining.
 } elseif ( $command == "get_cfg_dir" ) {
-	echo "daves_not_here_man\n";
+	echo "127 daves_not_here_man\n";
 	exit;
 
 } elseif ( $command == "console_get" ) {
@@ -157,6 +162,8 @@ if ( $command == "version" ) {
 // catchall
 } else {
 	//invalid/unsupported command
+	echo "*** FATAL: Unknown command: $command";
+	http_response_code(404);
 	exit;
 }
 
