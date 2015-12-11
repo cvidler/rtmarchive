@@ -66,7 +66,7 @@ for DIR in "$BASEDIR"/*; do
 				if [ $ZCOUNT -ne 0 ]; then if [ $archivedelay -gt 86400 ]; then
 					for ZDATA in $DAY/zdata_*; do
 						debugecho "***DEBUG: Processing: $ZDATA"
-						$AWK -F" " '$1=="#TS:" { print $2","strftime("%c",strtonum("0x"$2),1); }' "$ZDATA" >> "$DAY"/timestamps.lst.tmp
+						$AWK -F" " '$1=="#TS:" { print $2", "strftime("%c",strtonum("0x"$2),1); }' "$ZDATA" >> "$DAY"/timestamps.lst.tmp
 						$AWK -F" " '$1=="U" { a[$7]++ } END { for (b in a) {print b} }' "$ZDATA" | 
 							$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
 						$AWK -F" " '$1=="U" { a[$2]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/serverips.lst.tmp
@@ -76,9 +76,9 @@ for DIR in "$BASEDIR"/*; do
 					done
 
 					if [ $updated -ne 0 ]; then
-						# de-dupe data files
+						# de-dupe and sort list files
 						for file in timestamps.lst softwareservice.lst serverips.lst clientips.lst serverports.lst; do
-							$AWK '!seen[$0]++' "$DAY"/$file.tmp > "$DAY"/$file
+							$AWK '{ !a[$0]++ } END { n=asorti(a,c) } END { for (i = 1; i <= n; i++) { print c[i] } }' "$DAY"/$file.tmp > "$DAY"/$file
 							chmod -w "$DAY"/$file
 							rm "$DAY"/$file.tmp
 						done
@@ -86,7 +86,7 @@ for DIR in "$BASEDIR"/*; do
 
 					# archive it all
 					ARCNAME=$AMDNAME-$DATADATE.tar.bz2
-					$TAR -cjf "$MONTH"/$ARCNAME "$DAY"/* >&2
+					$TAR -cjf "$MONTH"/$ARCNAME -C "$DAY" . >&2
 					if [ $? -eq 0 ]; then
 						#succesful, checksum the archive and clean up data files
 						$SHA512SUM $MONTH/$ARCNAME > $MONTH/$ARCNAME.sha512
