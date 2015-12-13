@@ -126,9 +126,16 @@ if ( $command == "version" ) {
 	exit;
 
 
-//RtmConfigServlet - don't really care, just respond to stop RUMC complaining.
+//RtmConfigServlet - don't really care, just respond (safely) to stop RUMC complaining.
+} elseif ( $command == "exportconfig" ) {
+	echo "ExportConfig Request discarded. Another export operation already in progress!";
+	http_response_code(503);
+	exit;
+
 } elseif ( $command == "get_cfg_dir" ) {
-	echo "127 daves_not_here_man\n";
+	echo "2d\n";
+	echo "0\n";
+	echo "daves_not_here_man 127\n";
 	exit;
 
 } elseif ( $command == "console_get" ) {
