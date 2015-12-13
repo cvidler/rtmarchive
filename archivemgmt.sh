@@ -37,7 +37,7 @@ echo -e "Starting"
 for DIR in "$BASEDIR"/*; do
 	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
 	(
-	# only interested if it's got AMD data in it
+	# only interested if it has got AMD data in it
 	if [ ! -r "$DIR/prevdir.lst" ]; then continue; fi
 	AMDNAME=`echo $DIR | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `
 	echo -e "Processing AMD: $AMDNAME"
@@ -110,6 +110,7 @@ for DIR in "$BASEDIR"/*; do
 			done
 		done 
 	done
+	echo -e "Processing AMD: $AMDNAME complete."
 	) &	
 done
 
