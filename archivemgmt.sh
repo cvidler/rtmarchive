@@ -110,8 +110,7 @@ for DIR in "$BASEDIR"/*; do
 			done
 		done 
 	done
-	)
-
+	) &	
 done
 
 echo -e "rtmarchive Archive Management Script"
