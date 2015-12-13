@@ -9,7 +9,7 @@
 # Config
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=~/rtmarchive
-MAXTHREADS=1
+MAXTHREADS=4
 
 
 # Script below do not edit
@@ -58,7 +58,7 @@ for DIR in "$BASEDIR"/*; do
 				ZCOUNT=$(ls "$DAY"/zdata_* 2> /dev/null | wc -l)
 				set -e
 				updated=0
-				#if there's zdata (already archived) and it's not todays date (incomplete data), then archvie it
+				# if there is zdata (already archived) and it is not todays date (incomplete data), then archvie it
 				nowtime=$($DATE -u +"%s")
 				datatime=$($DATE -u -d "$DATADATE" +"%s")
 				archivedelay=$(($nowtime-$datatime))
@@ -112,7 +112,7 @@ for DIR in "$BASEDIR"/*; do
 	done
 	echo -e "Processing AMD: $AMDNAME complete."
 	) &	
-done
+done; wait
 
 echo -e "rtmarchive Archive Management Script"
 echo -e "Complete"
