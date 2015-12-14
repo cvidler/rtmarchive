@@ -90,7 +90,7 @@
 	
 	$serverip = $_SERVER['SERVER_ADDR'];
 	$serverport = $_SERVER['SERVER_PORT'];
-	$serverssl = $_SERVER['HTTPS'];
+	if ( isset($_SERVER['HTTPS']) ) { $serverssl = $_SERVER['HTTPS']; } else { $serverssl = ""; }
 	$user = $_SERVER['REMOTE_ADDR'];
 
 
