@@ -108,9 +108,12 @@
 				
 				if ( ($temp[0] == $linkopts['remove_dataset']) and ($temp[1] == $user) ) {
 					//do nothing, this one is being removed.
-					$output = $output;
+					
+				} elseif ( $buffer == "" ) {
+					//do nothing, empty line
+
 				} else {
-					$output = $output."\n".$buffer;
+					$output = $output.$buffer."\n";
 				}
 
 		        }
