@@ -91,6 +91,8 @@ if (!$validated) {
 }
 
 
+if (!isset($datasets[$user])) { echo "***FATAL no config. Aborting."; http_response_code(500); exit;}
+
 
 // determine which AMD and archived day to report data from.
 $data = explode("|", $datasets[$user]);
