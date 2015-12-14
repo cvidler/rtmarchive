@@ -44,8 +44,9 @@ if ( file_exists("activedatasets.conf") ) {
 	                $data = explode(",", $buffer);
 			// load authentication details
 			//echo $data[2].",".$data[3];
-			$valid_passwords[trim($data[2])] = trim($data[3]);
-			$datasets[trim($data[2])] = trim($data[4]);
+			$valid_passwords[$data[2]] = $data[3];
+			$datasets[$data[2]] = $data[4];
+			$hids[$data[2]] = $data[0];
 		}
 	}
         fclose($file);
@@ -185,9 +186,9 @@ if ( $command == "version" ) {
 	exit;
 
 
-//hid - ???
+//hid - return a unique id
 } elseif ( $command == "hid" ) {
-	echo "5d2d6916f8713b91\n";
+	echo $hids[$user]."\n";
 	exit;
 
 
