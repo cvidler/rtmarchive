@@ -1,6 +1,8 @@
 <?php
 	// Config
 	define("BASEDIR", "/var/spool/rtmarchive/");
+	define("BASEPORT",9090);
+	define("NUMPORTS",10);
 
 
 	// Script below, do not edit.
@@ -101,6 +103,7 @@
 		// open/read config file
 		$filename = "activedatasets.conf";
 		$datalines = 0;
+		$output = "";
 		if ( file_exists($filename) ) {
 		        $file = fopen($filename,"r");
 		        while (($buffer = fgets($file)) !== false ) {
@@ -131,13 +134,31 @@
 	if ( isset($linkopts['add_dataset']) ) {
 		// Add dataset command
 
-		// append to config file
+		// read file for existing port usage.
 		$filename = "activedatasets.conf";
 		if ( file_exists($filename) ) {
-			$file = fopen($filename, "a") or die("***FATAL: Unable to open config file for appending.");
-			$output = randnum().",".$user.",".generateRandomString().",".generateRandomString().",".$linkopts['amd']."-".$linkopts['year']."-".$linkopts['month']."-".$linkopts['day']."\n";
-			fwrite($file, $output);
-			fclose($file);
+			$file = fopen($filename, "r");
+			$usedports['0'] = 0;
+			while (($buffer = fgets($file)) !== false ) {
+				$buffer = trim($buffer);
+				if ( substr($buffer,0,1) == "#" ) { continue; }
+				$temp = explode(",", $buffer);
+				$usedports[$temp[4]] = 1;
+			}
+
+			// find first unused port
+			$port = 0;
+			$lastport = BASEPORT + NUMPORTS;
+			for ($i = BASEPORT; $i <= $lastport; $i++) {
+				if ( isset($usedports[$i]) ) { continue; } else { $port = $i; break; }
+			}
+			if ( $port <> 0 ) { 
+				// append to config file
+				$file = fopen($filename, "a") or die("***FATAL: Unable to open config file for appending.");
+				$output = randnum().",".$user.",".generateRandomString().",".generateRandomString().",".$port.",".$linkopts['amd']."-".$linkopts['year']."-".$linkopts['month']."-".$linkopts['day']."\n";
+				fwrite($file, $output);
+				fclose($file);
+			}
 		}
 	}
 
@@ -259,7 +280,7 @@ if ( file_exists($filename) ) {
 		$data = explode(",", $buffer);
 		if ( ($data[1] == $user) or ($localuser) ) {
 			$datalines++;
-			echo " <li>Logon: $data[2], Password: $data[3]<br/>\n ".str_replace("|","<br/>\n ",$data[4])."<br/>\n <a href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0])."\">";
+			echo " <li>Logon: $data[2], Password: $data[3], Port: $data[4]<br/>\n ".str_replace("|","<br/>\n ",$data[5])."<br/>\n <a href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0])."\">";
 			echo "<font size=-1>Remove this dataset from the Archive AMD</a>";
 			if ( $localuser ) { echo " by $data[1]"; }
 			echo "</font></li>\n";
@@ -276,7 +297,7 @@ if ( $datalines == 0 ) {
 ?>
 </uL>
 
-<p><font size=-1>To use, in RUM Console add a new device, enter IP: <?php echo $serverip; ?> and port: <?php echo $serverport; ?>, answer <?php if ( $serverssl ) { echo "Yes"; } else { echo "No"; } ?> to use secune connection. Turn off Guided Configuration and SNMP.<br/>Use logon information above to collect the active data set.</font></p>
+<p><font size=-1>To use, in RUM Console add a new device, enter IP: <?php echo $serverip; ?>, answer <?php if ( $serverssl ) { echo "Yes"; } else { echo "No"; } ?> to use secune connection. Turn off Guided Configuration and SNMP.<br/>Use logon information above to collect the active data set.</font></p>
 <p><font size=-1>Add that new AMD as a data source to a new empty CAS, and publish the config, the CAS will connect and collect the data files processing them for analysis.</font></p>
 </td>
 </tr>
