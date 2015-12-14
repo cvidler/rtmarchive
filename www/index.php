@@ -1,5 +1,9 @@
 <?php
+	// Config
 	define("BASEDIR", "/var/spool/rtmarchive/");
+
+
+	// Script below, do not edit.
 
 
 	if ( is_dir(BASEDIR) ) {} else {
@@ -54,15 +58,16 @@
 	$linkopts['month'] = "";
 	$linkopts['day'] = "";
 	$linkopts['dataset'] = "";
+	$linkopts['actives'] = "";
 
 	if (count($_GET)) {
 	$link = base64_decode($_GET["link"]);
 	if ( strlen($link) ) {
-		$options = split("&", $link);
+		$options = explode("&", $link);
 		//print_r($options);
 		$optcount = count($options);
 		for($x = 0; $x < $optcount; $x++) {
-			$opt = split("=",$options[$x]);
+			$opt =explode("=",$options[$x]);
 			$linkopts[$opt[0]] = $opt[1];
 		}
 	}
@@ -75,6 +80,13 @@
 
 	//print_r($linkopts);
 	
+
+
+	$serverip = $_SERVER['SERVER_ADDR'];
+	$serverport = $_SERVER['SERVER_PORT'];
+	$serverssl = $_SERVER['HTTPS'];
+	$user = $_SERVER['REMOTE_ADDR'];
+
 ?>
 <html>
 <head>
@@ -84,7 +96,10 @@
 <h1>rtmarchive System</h1>
 <h6>Chris Vidler - Dynatrace DCRUM SME 2015</h6>
 
-<h2>AMD Sources</h2>
+<table>
+<tr>
+<td width="50%" valign="top">
+<h2>Archive Sources</h2>
 <ul class="list">
 <?php
 	$basedir = scandir(BASEDIR);
@@ -170,7 +185,41 @@
 	}
 ?>
 </ul>
+</td>
 
+<td width="50%" valign="top">
+<h2>AMD Control</h2>
+<ul class="list">
+<?php
+// load currently active data sets from config file
+
+$filename = "activedatasets.conf";
+$datalines = 0;
+if ( file_exists($filename) ) {
+	$file = fopen($filename,"r");
+	while (($buffer = fgets($file)) !== false ) {
+		$data = explode(",", $buffer);
+		if ( $data[1] == $user ) {
+			$datalines++;
+			echo " <li>Logon: $data[2], Password: $data[3]<br/>".str_replace("|","<br/>",$data[4])."</li>\n";
+		}
+	}
+	fclose($file);
+}
+
+if ( $datalines == 0 ) {
+        echo " <li>No active data sets</li>\n";
+}
+
+
+?>
+</uL>
+
+<p>To use, in RUM Console add a new device, enter IP: <?php echo $serverip; ?> and port: <?php echo $serverport; ?>, answer <?php if ( $serverssl ) { echo "Yes"; } else { echo "No"; } ?> to use secure connection.<br/>Use logon information above to collect the active data set.</p>
+<p> Add that new AMD as a data source to a new empty CAS, and publish the config, the CAS will connect and collect the data files processing them for analysis.</p>
+</td>
+</tr>
+</table>
 
 </body>
 </html>

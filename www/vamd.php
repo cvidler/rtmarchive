@@ -19,8 +19,8 @@
 
 // Config
 define("BASEDIR", "/var/spool/rtmarchive/");	//location of data archive
-define("USER", "rtmarchive");			//auth for RUMC/CAS to use
-define("PASS", "history");			// "
+//define("USER", "rtmarchive");			//auth for RUMC/CAS to use
+//define("PASS", "history");			// "
 
 
 
@@ -28,11 +28,33 @@ define("PASS", "history");			// "
 header_remove();
 
 if ( is_dir(BASEDIR) ) {} else {
-	echo "***FATAL: ".BASEDIR." does not exist.\n";
+	echo "***FATAL: ".BASEDIR." does not exist. Aborting.\n";
 	http_response_code(500);
 	exit;
 }
 
+// Load config file
+// id,username,password,datasets
+// datasets = amd-year-month-day| repeat
+if ( file_exists("activedatasets.conf") ) {
+	$file = fopen("activedatasets.conf","r");
+        while (($buffer = fgets($file)) !== false ) {
+		$buffer = trim($buffer);
+		if ($buffer !== "") { 
+	                $data = explode(",", $buffer);
+			// load authentication details
+			//echo $data[2].",".$data[3];
+			$valid_passwords[trim($data[2])] = trim($data[3]);
+			$datasets[trim($data[2])] = trim($data[4]);
+		}
+	}
+        fclose($file);
+	
+} else {
+	echo "***FATAL: Archive AMD config file not found or not readable. Aborting.\n";
+	http_response_code(500);
+	exit;
+}
 
 // figure out what we're meant to do...
 $command = "";
@@ -51,7 +73,7 @@ $DATE = `which date`;
 
 
 //authentication
-$valid_passwords = array (USER => PASS);
+//$valid_passwords = array (USER => PASS);  //loaded from config file above
 $valid_users = array_keys($valid_passwords);
 
 $user = "";
@@ -69,14 +91,17 @@ if (!$validated) {
 
 
 
-// Read config file created by web interface
 // determine which AMD and archived day to report data from.
+$data = explode("|", $datasets[$user]);
 
-// tbd
-$amd = "amde1";
-$year = "2015";
-$month = "12";
-$day = "08";
+//only support 1 date (the first in the list) currently
+// TBD
+$data = explode("-",$data[0]);
+$amd = $data[0];
+$year = $data[1];
+$month = $data[2];
+$day = $data[3];
+
 
 // create vars we need
 $datadate = $year."-".$month."-".$day;
