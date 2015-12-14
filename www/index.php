@@ -87,6 +87,36 @@
 	$serverssl = $_SERVER['HTTPS'];
 	$user = $_SERVER['REMOTE_ADDR'];
 
+
+	if ( isset($linkopts['remove_dataset']) )  {
+		// Remove dataset command
+
+		// open/read config file
+		$filename = "activedatasets.conf";
+		$datalines = 0;
+		if ( file_exists($filename) ) {
+		        $file = fopen($filename,"r");
+		        while (($buffer = fgets($file)) !== false ) {
+		                $buffer = trim($buffer);
+				$temp = explode(",", $buffer);
+				
+				if ( ($temp[0] == $linkopts['remove_dataset']) and ($temp[1] == $user) ) {
+					//do nothing, this one is being removed.
+					$output = $output;
+				} else {
+					$output = $output."\n".$buffer;
+				}
+
+		        }
+		        fclose($file);
+			$file = fopen($filename, "w") or die("***FATAL: Unable to update config file.");
+			fwrite($file, $output);
+			fclose($file);
+		}
+		
+	}
+
+
 ?>
 <html>
 <head>
@@ -198,10 +228,12 @@ $datalines = 0;
 if ( file_exists($filename) ) {
 	$file = fopen($filename,"r");
 	while (($buffer = fgets($file)) !== false ) {
+		$buffer = trim($buffer);
 		$data = explode(",", $buffer);
 		if ( $data[1] == $user ) {
 			$datalines++;
-			echo " <li>Logon: $data[2], Password: $data[3]<br/>".str_replace("|","<br/>",$data[4])."</li>\n";
+			echo " <li>Logon: $data[2], Password: $data[3]<br/>\n ".str_replace("|","<br/>\n ",$data[4])."<br/>\n <a href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0]).
+			"\"><font size=-1>Remove this dataset from the Archive AMD</font></a></li>\n";
 		}
 	}
 	fclose($file);
@@ -215,8 +247,8 @@ if ( $datalines == 0 ) {
 ?>
 </uL>
 
-<p>To use, in RUM Console add a new device, enter IP: <?php echo $serverip; ?> and port: <?php echo $serverport; ?>, answer <?php if ( $serverssl ) { echo "Yes"; } else { echo "No"; } ?> to use secure connection.<br/>Use logon information above to collect the active data set.</p>
-<p> Add that new AMD as a data source to a new empty CAS, and publish the config, the CAS will connect and collect the data files processing them for analysis.</p>
+<p><font size=-1>To use, in RUM Console add a new device, enter IP: <?php echo $serverip; ?> and port: <?php echo $serverport; ?>, answer <?php if ( $serverssl ) { echo "Yes"; } else { echo "No"; } ?> to use secure connection.<br/>Use logon information above to collect the active data set.</font></p>
+<p><font size=-1>Add that new AMD as a data source to a new empty CAS, and publish the config, the CAS will connect and collect the data files processing them for analysis.</font></p>
 </td>
 </tr>
 </table>
