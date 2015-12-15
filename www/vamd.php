@@ -96,6 +96,7 @@ if (!isset($datasets[$user])) { echo "***FATAL no config. Aborting."; http_respo
 
 // determine which AMD and archived day to report data from.
 $datasets = explode("|", $datasets[$user]);
+sort($datasets);
 $datacount = count($datasets);
 $x = 0; $noarchive = 0;
 for ($i = 0; $i < $datacount; $i++) {
@@ -108,7 +109,7 @@ for ($i = 0; $i < $datacount; $i++) {
 	// create vars we need
 	$datadate = $year."-".$month."-".$day;
 	$archive = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$datadate.".tar.bz2";
-	if ( ! file_exists($archive) ) { $noarchive = 1; } else {
+	if ( ! file_exists($archive) ) { $noarchive = 1; echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit;} else {
 		$archives[$x++] = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$datadate.".tar.bz2";
 	}
 }
@@ -143,7 +144,7 @@ if ( $command == "version" ) {
 	exit;
 
 } elseif (( $command == "get_dir" ) || ( $command == "zip_dir" ))  {
-	if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
+	//if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
 	$data = ""; $i = 0;
 	for ( $i = 0; $i < $datacount; $i++ ) {
 		$data = $data.`/usr/bin/tar -tf "$archives[$i]" | /usr/bin/awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '`;
@@ -153,7 +154,7 @@ if ( $command == "version" ) {
 	exit;
 
 } elseif (( $command == "get_entry" ) || ( $command == "zip_entry" ))  {
-	if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
+	//if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
 	$entry = $_GET["entry"];
 	if ( $entry == "" ) { exit; }
 	$data = ""; $i = 0;
