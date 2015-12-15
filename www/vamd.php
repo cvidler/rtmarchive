@@ -40,7 +40,7 @@ if ( file_exists("activedatasets.conf") ) {
 	$file = fopen("activedatasets.conf","r");
         while (($buffer = fgets($file)) !== false ) {
 		$buffer = trim($buffer);
-		if ($buffer !== "") { 
+		if ( ($buffer !== "" ) and (substr(0, 1, $buffer) !== "#") ) { 
 	                $data = explode(",", $buffer);
 			// load authentication details
 			//echo $data[2].",".$data[3];
@@ -100,11 +100,12 @@ sort($datasets);
 $datacount = count($datasets);
 $x = 0; $noarchive = 0;
 for ($i = 0; $i < $datacount; $i++) {
+	if ( $datasets[$i] == "" ) { continue; }
 	$data = explode("-",$datasets[$i]);
-	$amd = $data[0];
-	$year = $data[1];
-	$month = $data[2];
-	$day = $data[3];
+	$amd = @$data[0];
+	$year = @$data[1];
+	$month = @$data[2];
+	$day = @$data[3];
 
 	// create vars we need
 	$datadate = $year."-".$month."-".$day;

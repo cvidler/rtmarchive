@@ -330,8 +330,15 @@
 
 if ( $datasets <> "" ) {
 
-	echo $datasets."\n";	
-
+	$temp = explode("|", $datasets);
+	$count = count($temp);
+	for ( $i = 0; $i < $count; $i++) {
+		if ( $temp[$i] == "" ) { continue; }
+		$temp2 = explode("-", $temp[$i]);
+		echo $temp2[0]." ".$temp2[1]."/".$temp2[2]."/".$temp2[3]." <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$temp2[0]."&year=".$temp2[1]."&month=".$temp2[2]."&day=".$temp2[3]."&uncheck=true".$datasetsurl)."\">Uncheck</a><br/>\n";
+	}
+		echo "<br/><a href=\"?link=".base64_encode("rand=".randnum()."&add_dataset=true".$datasetsurl).
+	             "\">Add to Archive AMD</a><br/>\n";
 }
 
 ?>
@@ -354,11 +361,18 @@ if ( file_exists($filename) ) {
 		if ( ($data[1] == $user) or ($localuser) ) {
 			$datalines++;
 			if ( $data[1] <> $user ) { $notyours = "NOT YOUR DATASET, Confirm with user at: $data[1]\\n"; } else { $notyours = "";}
-			echo " <li>Logon: $data[2], Password: $data[3], Port: $data[4]<br/>\n ".str_replace("|","<br/>\n ",$data[5])."<br/>\n ";
+			echo " <li>Logon: $data[2], Password: $data[3], Port: $data[4]<br/>\n ";
+        		$temp = explode("|", $data[5]);
+		        $count = count($temp);
+		        for ( $i = 0; $i < $count; $i++) {
+		                if ( $temp[$i] == "" ) { continue; }
+		                $temp2 = explode("-", $temp[$i]);
+		                echo $temp2[0]." ".$temp2[1]."/".$temp2[2]."/".$temp2[3]."<br/>\n";
+		        }
 			echo "<a onclick=\"javascript:return confirm('$notyours\\nRemove active dataset:\\n$data[5]\\non port: $data[4]');\" href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0])."\">";
 			echo "<font size=-1>Remove this dataset from the Archive AMD</a>";
 			if ( $localuser ) { echo " by $data[1]"; }
-			echo "</font></li>\n";
+			echo "<br/>&nbsp;</font></li>\n";
 		}
 	}
 	fclose($file);
