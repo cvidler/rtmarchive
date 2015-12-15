@@ -45,7 +45,7 @@ if ( file_exists("activedatasets.conf") ) {
 			// load authentication details
 			//echo $data[2].",".$data[3];
 			$valid_passwords[$data[2]] = $data[3];
-			$datasets[$data[2]] = $data[4];
+			$datasets[$data[2]] = $data[5];
 			$hids[$data[2]] = $data[0];
 		}
 	}
@@ -95,23 +95,28 @@ if (!isset($datasets[$user])) { echo "***FATAL no config. Aborting."; http_respo
 
 
 // determine which AMD and archived day to report data from.
-$data = explode("|", $datasets[$user]);
+$datasets = explode("|", $datasets[$user]);
+$datacount = count($datasets);
+$x = 0; $noarchive = 0;
+for ($i = 0; $i < $datacount; $i++) {
+	$data = explode("-",$datasets[$i]);
+	$amd = $data[0];
+	$year = $data[1];
+	$month = $data[2];
+	$day = $data[3];
 
-//only support 1 date (the first in the list) currently
-// TBD
-$data = explode("-",$data[0]);
-$amd = $data[0];
-$year = $data[1];
-$month = $data[2];
-$day = $data[3];
+	// create vars we need
+	$datadate = $year."-".$month."-".$day;
+	$archive = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$datadate.".tar.bz2";
+	if ( ! file_exists($archive) ) { $noarchive = 1; } else {
+		$archives[$x++] = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$datadate.".tar.bz2";
+	}
+}
+$datacount = count($archives);
 
-
-// create vars we need
-$datadate = $year."-".$month."-".$day;
-$archive = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$datadate.".tar.bz2";
 
 //check validity
-if ( ! file_exists($archive) ) { $noarchive = 1; }
+//if ( ! file_exists($archive) ) { $noarchive = 1; }
 
 header("Cache-Control: private");
 header("Content-Type:");
@@ -139,7 +144,10 @@ if ( $command == "version" ) {
 
 } elseif (( $command == "get_dir" ) || ( $command == "zip_dir" ))  {
 	if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
-	$data = `/usr/bin/tar -tf "$archive" | /usr/bin/awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '`;
+	$data = ""; $i = 0;
+	for ( $i = 0; $i < $datacount; $i++ ) {
+		$data = $data.`/usr/bin/tar -tf "$archives[$i]" | /usr/bin/awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '`;
+	}
 	if ( $command == "zip_dir" ) { $data = gzencode($data); }
 	echo $data;
 	exit;
@@ -148,7 +156,14 @@ if ( $command == "version" ) {
 	if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
 	$entry = $_GET["entry"];
 	if ( $entry == "" ) { exit; }
-	$data = `/usr/bin/tar -Oxf "$archive" "*/$entry"`;
+	$data = ""; $i = 0;
+	for ( $i = 0; $i < $datacount; $i++ ) {
+		$data = `/usr/bin/tar -tf "$archives[$i]" | /usr/bin/awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '`;
+		if ( strpos($data, $entry) !== false ) {
+			$data = `/usr/bin/tar -Oxf "$archives[$i]" "*/$entry" 2> /dev/null`;
+			break;
+		}
+	}
 	if ( $command == "zip_entry" ) { $data = gzencode($data); }
         echo $data;
 	exit;
