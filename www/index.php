@@ -126,6 +126,7 @@
 			fwrite($file, $output);
 			fclose($file);
 		}
+		header("Location: /");
 		
 	}
 
@@ -159,6 +160,7 @@
 				fwrite($file, $output);
 				fclose($file);
 			}
+			header("Location: /");
 		}
 	}
 
@@ -280,7 +282,9 @@ if ( file_exists($filename) ) {
 		$data = explode(",", $buffer);
 		if ( ($data[1] == $user) or ($localuser) ) {
 			$datalines++;
-			echo " <li>Logon: $data[2], Password: $data[3], Port: $data[4]<br/>\n ".str_replace("|","<br/>\n ",$data[5])."<br/>\n <a href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0])."\">";
+			if ( $data[1] <> $user ) { $notyours = "NOT YOUR DATASET, Confirm with user at: $data[1]\\n"; } else { $notyours = "";}
+			echo " <li>Logon: $data[2], Password: $data[3], Port: $data[4]<br/>\n ".str_replace("|","<br/>\n ",$data[5])."<br/>\n ";
+			echo "<a onclick=\"javascript:return confirm('$notyours\\nRemove active dataset:\\n$data[5]\\non port: $data[4]');\" href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0])."\">";
 			echo "<font size=-1>Remove this dataset from the Archive AMD</a>";
 			if ( $localuser ) { echo " by $data[1]"; }
 			echo "</font></li>\n";
@@ -299,6 +303,7 @@ if ( $datalines == 0 ) {
 
 <p><font size=-1>To use, in RUM Console add a new device, enter IP: <?php echo $serverip; ?>, answer <?php if ( $serverssl ) { echo "Yes"; } else { echo "No"; } ?> to use secune connection. Turn off Guided Configuration and SNMP.<br/>Use logon information above to collect the active data set.</font></p>
 <p><font size=-1>Add that new AMD as a data source to a new empty CAS, and publish the config, the CAS will connect and collect the data files processing them for analysis.</font></p>
+<p><font size=-1>Removing a dataset config is, after confirmation, instant and permanent - there's no undo.  It'll break any currently operating CAS processing that dataset.</font></p>
 </td>
 </tr>
 </table>
