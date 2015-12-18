@@ -206,7 +206,7 @@
 				if ( $datasets <> "" ) { 
 					$temp = $datasets;
 				} else { 
-					$temp = $linkopts['amd']."-".$linkopts['year']."-".$linkopts['month']."-".$linkopts['day'];
+					$temp = "|".$linkopts['amd']."-".$linkopts['year']."-".$linkopts['month']."-".$linkopts['day'];
 				}
 				$uuid = randnum();	
 				$output = $uuid.",".$user.",".generateRandomString().",".generateRandomString().",".$port.",".$temp."\n";
@@ -224,7 +224,7 @@
 					$amd = $temp2[0]; $year = $temp2[1]; $month = $temp2[2]; $day = $temp2[3];
 					$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2";
 					if ( !file_exists($arcname) ) { die("***FATAL: Archive $arcname not found. Aborting."); }
-					`cd $tempdir && /usr/bin/tar -xjf $arcname`;
+					`cd $tempdir && /usr/bin/tar -xjf $arcname --transform='s/.*\///'`;
 					`rm -f $tempdir/*.lst`;
 			        }
 			}
@@ -408,7 +408,7 @@ if ( file_exists($filename) ) {
 		                $temp2 = explode("-", $temp[$i]);
 		                echo $temp2[0]." ".$temp2[1]."/".$temp2[2]."/".$temp2[3]."<br/>\n";
 		        }
-			echo "<a onclick=\"javascript:return confirm('$notyours\\nRemove active dataset:\\n$data[5]\\non port: $data[4]');\" href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0])."\">";
+			echo "<a onclick=\"javascript:return confirm('$notyours\\nRemove active dataset:".str_replace("|","\\n",$data[5])."\\non port: $data[4]');\" href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0])."\">";
 			echo "<font size=-1>Remove this dataset from the Archive AMD</a>";
 			if ( $localuser ) { echo " by $data[1]"; }
 			echo "<br/>&nbsp;</font></li>\n";
@@ -425,7 +425,7 @@ if ( $datalines == 0 ) {
 ?>
 </uL>
 
-<p><font size=-1>To use, in RUM Console add a new device, enter IP: <?php echo $serverip; ?>, answer <?php if ( $serverssl ) { echo "Yes"; } else { echo "No"; } ?> to use secune connection. Turn off Guided Configuration and SNMP.<br/>Use logon information above to collect the active data set.</font></p>
+<p><font size=-1>To use, in RUM Console add a new device, enter IP: <?php echo $serverip; ?>, answer <?php if ( $serverssl ) { echo "Yes"; } else { echo "No"; } ?> to use secure connection. Turn off Guided Configuration and SNMP.<br/>Use logon information above to collect the active data set.</font></p>
 <p><font size=-1>Add that new AMD as a data source to a new empty CAS, and publish the config, the CAS will connect and collect the data files processing them for analysis.</font></p>
 <p><font size=-1>Removing a dataset config is, after confirmation, instant and permanent - there's no undo.  It'll break any currently operating CAS processing that dataset.</font></p>
 </td>
