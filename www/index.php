@@ -152,7 +152,8 @@
 				$temp = explode(",", $buffer);
 				
 				if ( ($temp[0] == $linkopts['remove_dataset']) and ($temp[1] == $user or $localuser) ) {
-					//do nothing, this one is being removed.
+					// this one is being removed.
+					$tempdir = BASEDIR.".temp/".$temp[0];
 					
 				} elseif ( $buffer == "" ) {
 					//do nothing, empty line
@@ -163,9 +164,17 @@
 
 		        }
 		        fclose($file);
+
+			// Update config file
 			$file = fopen($filename, "w") or die("***FATAL: Unable to update config file.");
 			fwrite($file, $output);
 			fclose($file);
+			
+                        if ( file_exists($tempdir) ) {
+	                        //remove the temp dir if it exists
+                                `rm -rf $tempdir`;
+                        }
+  
 		}
 		header("Location: /");
 		
@@ -198,12 +207,42 @@
 					$temp = $datasets;
 				} else { 
 					$temp = $linkopts['amd']."-".$linkopts['year']."-".$linkopts['month']."-".$linkopts['day'];
-				}	
-				$output = randnum().",".$user.",".generateRandomString().",".generateRandomString().",".$port.",".$temp."\n";
+				}
+				$uuid = randnum();	
+				$output = $uuid.",".$user.",".generateRandomString().",".generateRandomString().",".$port.",".$temp."\n";
 				
 				fwrite($file, $output);
 				fclose($file);
+				// create temp dir and extract archives to it
+				$tempdir = BASEDIR.".temp/".$uuid;
+				`mkdir -p $tempdir`;
+			        $temp = explode("|", $temp);
+			        $count = count($temp);
+			        for ( $i = 0; $i < $count; $i++) {
+			                if ( $temp[$i] == "" ) { continue; }
+			                $temp2 = explode("-", $temp[$i]);
+					$amd = $temp2[0]; $year = $temp2[1]; $month = $temp2[2]; $day = $temp2[3];
+					$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2";
+					if ( !file_exists($arcname) ) { die("***FATAL: Archive $arcname not found. Aborting."); }
+					`cd $tempdir && /usr/bin/tar -xjf $arcname`;
+					`rm -f $tempdir/*.lst`;
+			        }
 			}
+			unset($port);
+			unset($lastport);
+			unset($usedports);
+			unset($filename);
+			unset($tempdir);
+			unset($arcname);
+			unset($temp);
+			unset($temp2);
+			unset($amd);
+			unset($year);
+			unset($month);
+			unset($day);
+			unset($i);
+			unset($file);
+			unset($uuid);
 			header("Location: /");
 		}
 	}

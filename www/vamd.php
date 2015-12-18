@@ -40,7 +40,7 @@ if ( file_exists("activedatasets.conf") ) {
 	$file = fopen("activedatasets.conf","r");
         while (($buffer = fgets($file)) !== false ) {
 		$buffer = trim($buffer);
-		if ( ($buffer !== "" ) and (substr(0, 1, $buffer) !== "#") ) { 
+		if ( ($buffer !== "" ) and (substr($buffer, 0, 1) !== "#") ) { 
 	                $data = explode(",", $buffer);
 			// load authentication details
 			//echo $data[2].",".$data[3];
@@ -95,26 +95,31 @@ if (!isset($datasets[$user])) { echo "***FATAL no config. Aborting."; http_respo
 
 
 // determine which AMD and archived day to report data from.
-$datasets = explode("|", $datasets[$user]);
-sort($datasets);
-$datacount = count($datasets);
-$x = 0; $noarchive = 0;
-for ($i = 0; $i < $datacount; $i++) {
-	if ( $datasets[$i] == "" ) { continue; }
-	$data = explode("-",$datasets[$i]);
-	$amd = @$data[0];
-	$year = @$data[1];
-	$month = @$data[2];
-	$day = @$data[3];
+//$datasets = explode("|", $datasets[$user]);
+//sort($datasets);
+//$datacount = count($datasets);
+//$x = 0; $noarchive = 0;
+//for ($i = 0; $i < $datacount; $i++) {
+//	if ( $datasets[$i] == "" ) { continue; }
+//	$data = explode("-",$datasets[$i]);
+//	$amd = @$data[0];
+//	$year = @$data[1];
+//	$month = @$data[2];
+//	$day = @$data[3];
+//
+//	// create vars we need
+//	$datadate = $year."-".$month."-".$day;
+//	$archive = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$datadate.".tar.bz2";
+//	if ( ! file_exists($archive) ) { $noarchive = 1; echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit;} else {
+//		$archives[$x++] = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$datadate.".tar.bz2";
+//	}
+//}
+//$datacount = count($archives);
 
-	// create vars we need
-	$datadate = $year."-".$month."-".$day;
-	$archive = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$datadate.".tar.bz2";
-	if ( ! file_exists($archive) ) { $noarchive = 1; echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit;} else {
-		$archives[$x++] = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$datadate.".tar.bz2";
-	}
-}
-$datacount = count($archives);
+// build temp dir variable, use the unique ID
+$tempdir = BASEDIR.".temp/".$hids[$user]."/";
+$noarchvie = 0;
+if ( ! file_exists($tempdir) ) { $noarchive = 1; }
 
 
 //check validity
@@ -146,10 +151,12 @@ if ( $command == "version" ) {
 
 } elseif (( $command == "get_dir" ) || ( $command == "zip_dir" ))  {
 	//if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
-	$data = ""; $i = 0;
-	for ( $i = 0; $i < $datacount; $i++ ) {
-		$data = $data.`/usr/bin/tar -tf "$archives[$i]" | /usr/bin/awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '`;
-	}
+	//$data = ""; $i = 0;
+	//for ( $i = 0; $i < $datacount; $i++ ) {
+	//	$data = $data.`/usr/bin/tar -tf "$archives[$i]" | /usr/bin/awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '`;
+	//}
+	$data = "";
+	$data = `ls -1 $tempdir`;
 	if ( $command == "zip_dir" ) { $data = gzencode($data); }
 	echo $data;
 	exit;
@@ -158,14 +165,20 @@ if ( $command == "version" ) {
 	//if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
 	$entry = $_GET["entry"];
 	if ( $entry == "" ) { exit; }
-	$data = ""; $i = 0;
-	for ( $i = 0; $i < $datacount; $i++ ) {
-		$data = `/usr/bin/tar -tf "$archives[$i]" | /usr/bin/awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '`;
-		if ( strpos($data, $entry) !== false ) {
-			$data = `/usr/bin/tar -Oxf "$archives[$i]" "*/$entry" 2> /dev/null`;
-			break;
-		}
-	}
+	//$data = ""; $i = 0;
+	//for ( $i = 0; $i < $datacount; $i++ ) {
+	//	$data = `/usr/bin/tar -tf "$archives[$i]" | /usr/bin/awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '`;
+	//	if ( strpos($data, $entry) !== false ) {
+	//		$data = `/usr/bin/tar -Oxf "$archives[$i]" "*/$entry" 2> /dev/null`;
+	//		break;
+	//	}
+	//}
+	$filename = $tempdir.$entry;
+	if ( !file_exists($filename) ) { echo "***FATAL: File $entry not found. Aborting."; http_response_code(404); exit; }
+	$data = "";
+	$file = fopen($filename, "r");
+	if ( !$file ) { echo "***FATAL: File not readable: $filename. Aborting."; http_response_code(404); exit;}
+	$data = fread($file, filesize($filename));	
 	if ( $command == "zip_entry" ) { $data = gzencode($data); }
         echo $data;
 	exit;
