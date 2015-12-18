@@ -36,6 +36,7 @@ if ( is_dir(BASEDIR) ) {} else {
 // Load config file
 // id,username,password,datasets
 // datasets = amd-year-month-day| repeat
+$valid_passwords[rand()] = rand();		//set a random logon incase we have no config
 if ( file_exists("activedatasets.conf") ) {
 	$file = fopen("activedatasets.conf","r");
         while (($buffer = fgets($file)) !== false ) {
