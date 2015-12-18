@@ -136,6 +136,15 @@
 	if ( $datasets <> "" ) { $datasetsurl = "&datasets=".$datasets; }
 
 
+	//grab the first selected AMD, we use this to lock the additon of any others.
+	$activeamd = "";
+	$activeamd = explode("|", $datasets);
+	$activeamd = explode("-", @$activeamd[1]);
+	$activeamd = @$activeamd[0];
+	if ( $activeamd == "" ) { $activeamd = "nothing"; }
+	//echo ":".$activeamd.":";
+
+
 	// eAMD config setting code
 	if ( isset($linkopts['remove_dataset']) )  {
 		// Remove dataset command
@@ -328,7 +337,7 @@
 	                                                                                echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=cip".$datasetsurl).
 											"\">Client IP Addresses</a><br/>\n";
 										}
-                                                                               if ( $linkopts['dataset'] == "fi") {
+                                                                               	if ( $linkopts['dataset'] == "fi") {
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi".$datasetsurl).
 											"\"><b>Archive Integrity Check</b></a><br/>\n".
                                                                                         getdaydata($amd, $year, $month, $day, "fi")."\n";
@@ -337,10 +346,12 @@
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi".$datasetsurl).
 											"\">Archive Integrity Check</a><br/>\n";
                                                                                 }
-										echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&check=true".$datasetsurl).
-                                                                                "\">Add to dataset</a> \n";
-
-
+										if ( ( $activeamd == $amd ) or $activeamd == "nothing" ) {
+											echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&check=true".$datasetsurl).
+	                                                                                "\">Add to dataset</a> \n";
+										} else {
+											echo "        <font color=grey>Add to dataset</font>\n";
+										}
 									} 
 									else { 
 										echo $day."</a></li>\n"; }
