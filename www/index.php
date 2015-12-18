@@ -71,7 +71,6 @@
 	$linkopts['month'] = "";
 	$linkopts['day'] = "";
 	$linkopts['dataset'] = "";
-	$linkopts['actives'] = "";
 	$linkopts['datasets'] = "";
 
 	if (count($_GET)) {
@@ -338,12 +337,8 @@
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi".$datasetsurl).
 											"\">Archive Integrity Check</a><br/>\n";
                                                                                 }
-										echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&add_dataset=true".$datasetsurl).
-										"\">Add to Archive AMD</a><br/>\n";
 										echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&check=true".$datasetsurl).
-                                                                                "\">Check</a> \n";
-										echo "<a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&uncheck=true".$datasetsurl).
-                                                                                "\">Uncheck</a><br/>\n";
+                                                                                "\">Add to dataset</a> \n";
 
 
 									} 
@@ -368,7 +363,7 @@
 <?php 
 
 if ( $datasets <> "" ) {
-
+	echo "<h3>Create Dataset</h3>\n";
 	$temp = explode("|", $datasets);
 	$count = count($temp);
 	for ( $i = 0; $i < $count; $i++) {
@@ -428,6 +423,24 @@ if ( $datalines == 0 ) {
 <p><font size=-1>To use, in RUM Console add a new device, enter IP: <?php echo $serverip; ?>, answer <?php if ( $serverssl ) { echo "Yes"; } else { echo "No"; } ?> to use secure connection. Turn off Guided Configuration and SNMP.<br/>Use logon information above to collect the active data set.</font></p>
 <p><font size=-1>Add that new AMD as a data source to a new empty CAS, and publish the config, the CAS will connect and collect the data files processing them for analysis.</font></p>
 <p><font size=-1>Removing a dataset config is, after confirmation, instant and permanent - there's no undo.  It'll break any currently operating CAS processing that dataset.</font></p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><font size=-2>
+<?php
+    $dir = BASEDIR;
+    $size = `/usr/bin/du -sh $dir`;
+    $size = substr($size, 0, strpos($size, "\t"));
+    echo 'Archive size: '.$size;
+
+    $size = `/usr/bin/df -h $dir | tail -n 1`;
+    $size = preg_split("/\s+/",$size);
+    $free = 100 - $size[4];
+    echo ' Free space: '.$size[3]." ".$free."%";
+
+?>
+</font></p>
 </td>
 </tr>
 </table>
