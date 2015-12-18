@@ -432,12 +432,13 @@ if ( $datalines == 0 ) {
     $dir = BASEDIR;
     $size = `/usr/bin/du -sh $dir`;
     $size = substr($size, 0, strpos($size, "\t"));
-    echo 'Archive size: '.$size;
+    echo 'Archive size: '.$size."iB";
 
     $size = `/usr/bin/df -h $dir | tail -n 1`;
     $size = preg_split("/\s+/",$size);
     $free = 100 - $size[4];
-    echo ' Free space: '.$size[3]." ".$free."%";
+    if ( $free <= 10 ) { $free = "<font color=red>$free</font>"; }
+    echo ' - Free space: '.$size[3]."iB ".$free."%";
 
 ?>
 </font></p>
