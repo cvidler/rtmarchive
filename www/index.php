@@ -71,7 +71,6 @@
 	$linkopts['month'] = "";
 	$linkopts['day'] = "";
 	$linkopts['dataset'] = "";
-	$linkopts['actives'] = "";
 	$linkopts['datasets'] = "";
 
 	if (count($_GET)) {
@@ -137,6 +136,15 @@
 	if ( $datasets <> "" ) { $datasetsurl = "&datasets=".$datasets; }
 
 
+	//grab the first selected AMD, we use this to lock the additon of any others.
+	$activeamd = "";
+	$activeamd = explode("|", $datasets);
+	$activeamd = explode("-", @$activeamd[1]);
+	$activeamd = @$activeamd[0];
+	if ( $activeamd == "" ) { $activeamd = "nothing"; }
+	//echo ":".$activeamd.":";
+
+
 	// eAMD config setting code
 	if ( isset($linkopts['remove_dataset']) )  {
 		// Remove dataset command
@@ -152,7 +160,8 @@
 				$temp = explode(",", $buffer);
 				
 				if ( ($temp[0] == $linkopts['remove_dataset']) and ($temp[1] == $user or $localuser) ) {
-					//do nothing, this one is being removed.
+					// this one is being removed.
+					$tempdir = BASEDIR.".temp/".$temp[0];
 					
 				} elseif ( $buffer == "" ) {
 					//do nothing, empty line
@@ -163,9 +172,17 @@
 
 		        }
 		        fclose($file);
+
+			// Update config file
 			$file = fopen($filename, "w") or die("***FATAL: Unable to update config file.");
 			fwrite($file, $output);
 			fclose($file);
+			
+                        if ( file_exists($tempdir) ) {
+	                        //remove the temp dir if it exists
+                                `rm -rf $tempdir`;
+                        }
+  
 		}
 		header("Location: /");
 		
@@ -197,13 +214,43 @@
 				if ( $datasets <> "" ) { 
 					$temp = $datasets;
 				} else { 
-					$temp = $linkopts['amd']."-".$linkopts['year']."-".$linkopts['month']."-".$linkopts['day'];
-				}	
-				$output = randnum().",".$user.",".generateRandomString().",".generateRandomString().",".$port.",".$temp."\n";
+					$temp = "|".$linkopts['amd']."-".$linkopts['year']."-".$linkopts['month']."-".$linkopts['day'];
+				}
+				$uuid = randnum();	
+				$output = $uuid.",".$user.",".generateRandomString().",".generateRandomString().",".$port.",".$temp."\n";
 				
 				fwrite($file, $output);
 				fclose($file);
+				// create temp dir and extract archives to it
+				$tempdir = BASEDIR.".temp/".$uuid;
+				`mkdir -p $tempdir`;
+			        $temp = explode("|", $temp);
+			        $count = count($temp);
+			        for ( $i = 0; $i < $count; $i++) {
+			                if ( $temp[$i] == "" ) { continue; }
+			                $temp2 = explode("-", $temp[$i]);
+					$amd = $temp2[0]; $year = $temp2[1]; $month = $temp2[2]; $day = $temp2[3];
+					$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2";
+					if ( !file_exists($arcname) ) { die("***FATAL: Archive $arcname not found. Aborting."); }
+					`cd $tempdir && /usr/bin/tar -xjf $arcname --transform='s/.*\///'`;
+					`rm -f $tempdir/*.lst`;
+			        }
 			}
+			unset($port);
+			unset($lastport);
+			unset($usedports);
+			unset($filename);
+			unset($tempdir);
+			unset($arcname);
+			unset($temp);
+			unset($temp2);
+			unset($amd);
+			unset($year);
+			unset($month);
+			unset($day);
+			unset($i);
+			unset($file);
+			unset($uuid);
 			header("Location: /");
 		}
 	}
@@ -290,7 +337,7 @@
 	                                                                                echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=cip".$datasetsurl).
 											"\">Client IP Addresses</a><br/>\n";
 										}
-                                                                               if ( $linkopts['dataset'] == "fi") {
+                                                                               	if ( $linkopts['dataset'] == "fi") {
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi".$datasetsurl).
 											"\"><b>Archive Integrity Check</b></a><br/>\n".
                                                                                         getdaydata($amd, $year, $month, $day, "fi")."\n";
@@ -299,14 +346,12 @@
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi".$datasetsurl).
 											"\">Archive Integrity Check</a><br/>\n";
                                                                                 }
-										echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&add_dataset=true".$datasetsurl).
-										"\">Add to Archive AMD</a><br/>\n";
-										echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&check=true".$datasetsurl).
-                                                                                "\">Check</a> \n";
-										echo "<a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&uncheck=true".$datasetsurl).
-                                                                                "\">Uncheck</a><br/>\n";
-
-
+										if ( ( $activeamd == $amd ) or $activeamd == "nothing" ) {
+											echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&check=true".$datasetsurl).
+	                                                                                "\">Add to dataset</a> \n";
+										} else {
+											echo "        <font color=grey>Add to dataset</font>\n";
+										}
 									} 
 									else { 
 										echo $day."</a></li>\n"; }
@@ -329,7 +374,7 @@
 <?php 
 
 if ( $datasets <> "" ) {
-
+	echo "<h3>Create Dataset</h3>\n";
 	$temp = explode("|", $datasets);
 	$count = count($temp);
 	for ( $i = 0; $i < $count; $i++) {
@@ -369,7 +414,7 @@ if ( file_exists($filename) ) {
 		                $temp2 = explode("-", $temp[$i]);
 		                echo $temp2[0]." ".$temp2[1]."/".$temp2[2]."/".$temp2[3]."<br/>\n";
 		        }
-			echo "<a onclick=\"javascript:return confirm('$notyours\\nRemove active dataset:\\n$data[5]\\non port: $data[4]');\" href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0])."\">";
+			echo "<a onclick=\"javascript:return confirm('$notyours\\nRemove active dataset:".str_replace("|","\\n",$data[5])."\\non port: $data[4]');\" href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0])."\">";
 			echo "<font size=-1>Remove this dataset from the Archive AMD</a>";
 			if ( $localuser ) { echo " by $data[1]"; }
 			echo "<br/>&nbsp;</font></li>\n";
@@ -386,9 +431,28 @@ if ( $datalines == 0 ) {
 ?>
 </uL>
 
-<p><font size=-1>To use, in RUM Console add a new device, enter IP: <?php echo $serverip; ?>, answer <?php if ( $serverssl ) { echo "Yes"; } else { echo "No"; } ?> to use secune connection. Turn off Guided Configuration and SNMP.<br/>Use logon information above to collect the active data set.</font></p>
+<p><font size=-1>To use, in RUM Console add a new device, enter IP: <?php echo $serverip; ?>, answer <?php if ( $serverssl ) { echo "Yes"; } else { echo "No"; } ?> to use secure connection. Turn off Guided Configuration and SNMP.<br/>Use logon information above to collect the active data set.</font></p>
 <p><font size=-1>Add that new AMD as a data source to a new empty CAS, and publish the config, the CAS will connect and collect the data files processing them for analysis.</font></p>
 <p><font size=-1>Removing a dataset config is, after confirmation, instant and permanent - there's no undo.  It'll break any currently operating CAS processing that dataset.</font></p>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+<p><font size=-2>
+<?php
+    $dir = BASEDIR;
+    $size = `/usr/bin/du -sh $dir`;
+    $size = substr($size, 0, strpos($size, "\t"));
+    echo 'Archive size: '.$size."iB";
+
+    $size = `/usr/bin/df -h $dir | tail -n 1`;
+    $size = preg_split("/\s+/",$size);
+    $free = 100 - $size[4];
+    if ( $free <= 10 ) { $free = "<font color=red>$free</font>"; }
+    echo ' - Free space: '.$size[3]."iB ".$free."%";
+
+?>
+</font></p>
 </td>
 </tr>
 </table>
