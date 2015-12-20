@@ -60,18 +60,13 @@ if ( file_exists("activedatasets.conf") ) {
 
 // figure out what we're meant to do...
 $command = "";
-if ( isset( $_GET['cmd']) ) { $command = $_GET['cmd']; }
+if ( isset( $_GET['cmd']) ) { $command = strtolower($_GET['cmd']); }
 if ( isset( $_GET['cfg_oper']) ) { $command = $_GET['cfg_oper']; }
-if ( isset( $_SERVER['QUERY_STRING']) ) { if ( $_SERVER['QUERY_STRING'] == 'hid' ) { $command = "hid"; } }
+if ( isset( $_SERVER['QUERY_STRING']) ) { if ( $_SERVER['QUERY_STRING'] === 'hid' ) { $command = "hid"; } }
 
 if ( $command == "" ) { echo "***FATAL: No command. Aborting."; http_response_code(400); exit; }		// unknown command
 
 
-
-// locate utils we need
-$TAR = `which tar`;
-$CAT = `which cat`;
-$DATE = `which date`;
 
 
 //authentication
@@ -83,7 +78,7 @@ $pass = "";
 if ( isset($_SERVER['PHP_AUTH_USER']) ) { $user = $_SERVER['PHP_AUTH_USER']; }
 if ( isset($_SERVER['PHP_AUTH_PW']) ) { $pass = $_SERVER['PHP_AUTH_PW']; }
 
-$validated = (in_array($user, $valid_users)) && ($pass == $valid_passwords[$user]);
+$validated = (in_array($user, $valid_users)) && ($pass === $valid_passwords[$user]);
 
 if (!$validated) {
   header('WWW-Authenticate: Basic realm="rtmarchive"');
@@ -135,39 +130,42 @@ header("Expires: 1 Jan 1970 00:00:00 GMT");
 // main command selector
 
 // RtmDataServlet (the one we really want)
-if ( $command == "version" ) {
+if ( $command === "version" ) {
 // D-RTM v. ndw.12.3.0.791 Copyright (C) 1999-2011 Compuware Corp.
 // time_stamp=1449719436906
 // os=Red Hat Enterprise Linux Server release 6.6 (Santiago)
 // instances=true
+	$release = file_get_contents("/etc/redhat-release");
 	echo "ND-RTM v. ndw.12.3.0.000 rtmarchive Emulated AMD\n";
-	echo "time_stamp=".str_replace(array("\r","\n"), "", `/usr/bin/date -u +%s%3N`)."\n";
-	echo "os=".str_replace(array("\r","\n"), "", `/usr/bin/cat /etc/redhat-release`)."\n";
+	echo "time_stamp=".round(microtime(true) * 1000)."\n";
+	echo "os=".str_replace(array("\r","\n"), "", $release)."\n";
 	echo "instances=true\n";
 	exit;
 
-} elseif ( $command == "instance" ) {
+} elseif ( $command === "instance" ) {
 	echo "rtm\nnfc\n";
 	exit;
 
-} elseif (( $command == "get_dir" ) || ( $command == "zip_dir" ))  {
+} elseif (( $command === "get_dir" ) || ( $command === "zip_dir" ))  {
 	//if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
 	//$data = ""; $i = 0;
 	//for ( $i = 0; $i < $datacount; $i++ ) {
 	//	$data = $data.`/usr/bin/tar -tf "$archives[$i]" | /usr/bin/awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '`;
 	//}
 	$data = "";
-	$data = `ls -1 $tempdir`;
-	if ( $command == "zip_dir" ) { $data = gzencode($data); }
+	//$data = `ls -1 $tempdir`;.
+	if ( !file_exists($tempdir) ) { echo "***FATAL: Directory $tempdir not found. Aborting."; http_response_code(404); exit; }
+	$data = implode("\n", array_diff(scandir($tempdir),array(".","..")));
+	if ( $command === "zip_dir" ) { $data = gzencode($data); }
 	echo $data;
 	exit;
 
-} elseif (( $command == "get_entry" ) || ( $command == "zip_entry" ))  {
+} elseif (( $command === "get_entry" ) || ( $command === "zip_entry" ))  {
 	//if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
 	$entry = urldecode($_GET["entry"]);
 	//sanitise filename
 	$entry = preg_replace("/[^a-z0-9_]/", "", $entry);
-	if ( $entry == "" ) { exit; }
+	if ( $entry === "" ) { exit; }
 	//$data = ""; $i = 0;
 	//for ( $i = 0; $i < $datacount; $i++ ) {
 	//	$data = `/usr/bin/tar -tf "$archives[$i]" | /usr/bin/awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '`;
@@ -182,30 +180,30 @@ if ( $command == "version" ) {
 	$file = fopen($filename, "r");
 	if ( !$file ) { echo "***FATAL: File not readable: $filename. Aborting."; http_response_code(404); exit;}
 	$data = fread($file, filesize($filename));	
-	if ( $command == "zip_entry" ) { $data = gzencode($data); }
+	if ( $command === "zip_entry" ) { $data = gzencode($data); }
         echo $data;
 	exit;
 
 
 //RtmConfigServlet - don't really care, just respond (safely) to stop RUMC complaining.
-} elseif ( $command == "exportconfig" ) {
+} elseif ( $command === "exportconfig" ) {
 	echo "ExportConfig Request discarded. Another export operation already in progress!";
 	http_response_code(503);
 	exit;
 
-} elseif ( $command == "get_cfg_dir" ) {
+} elseif ( $command === "get_cfg_dir" ) {
 	echo "2d\n";
 	echo "0\n";
 	echo "daves_not_here_man 127\n";
 	exit;
 
-} elseif ( $command == "console_get" ) {
+} elseif ( $command === "console_get" ) {
 	echo "\n";
 	exit;
 
 
 //DiagServlet - don't really care, just respond to stop RUMC complaining.
-} elseif ( $command == "get_status" ) {
+} elseif ( $command === "get_status" ) {
 	echo "{\"modules\": {\n";
 	echo "\t\"module\": [\n";
 	echo "\t\t{\"name\": \"adlexv2page\", \"version\": \"12.4.0-18.el7\", \"statusBegin\": \"0\", \"statusEnd\": \"0\", \"installed\": \"3296181\", \"uptime\": \"168\"},\n";
@@ -222,7 +220,7 @@ if ( $command == "version" ) {
 
 
 //hid - return a unique id
-} elseif ( $command == "hid" ) {
+} elseif ( $command === "hid" ) {
 	echo $hids[$user]."\n";
 	exit;
 
