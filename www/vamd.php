@@ -164,7 +164,9 @@ if ( $command == "version" ) {
 
 } elseif (( $command == "get_entry" ) || ( $command == "zip_entry" ))  {
 	//if ( $noarchive ) { echo "***FATAL Archive: $archive does not exist. Aborting."; http_response_code(404); exit; }
-	$entry = $_GET["entry"];
+	$entry = urldecode($_GET["entry"]);
+	//sanitise filename
+	$entry = preg_replace("/[^a-z0-9_]/", "", $entry);
 	if ( $entry == "" ) { exit; }
 	//$data = ""; $i = 0;
 	//for ( $i = 0; $i < $datacount; $i++ ) {
