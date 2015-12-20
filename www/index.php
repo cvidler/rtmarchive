@@ -17,35 +17,35 @@
 		// return the extracted zdata stats for browsing
 		$data = "";
 
-		if ($dataset == "ss") {
+		if ($dataset === "ss") {
 			$filename = BASEDIR.$amd."/".$year."/".$month."/".$day."/softwareservice.lst";
 			if ( file_exists($filename) ) {
 				$file = fopen($filename,"r");
 				$data = str_replace("\n","<br/>",htmlspecialchars(urldecode(fread($file, filesize($filename)))));
 				fclose($file);
 			}
-		} elseif ($dataset == "sip") {
+		} elseif ($dataset === "sip") {
 	                $filename = BASEDIR.$amd."/".$year."/".$month."/".$day."/serverips.lst";
 			if ( file_exists($filename) ) {
 	        	        $file = fopen($filename,"r");
         	        	$data = str_replace("\n","<br/>",htmlspecialchars(urldecode(fread($file, filesize($filename)))));
 	        	        fclose($file);
 			}
-		} elseif ($dataset == "cip") {
+		} elseif ($dataset === "cip") {
 	                $filename = BASEDIR.$amd."/".$year."/".$month."/".$day."/clientips.lst";
 			if ( file_exists($filename) ) {
 	        	        $file = fopen($filename,"r");
         	        	$data = str_replace("\n","<br/>",htmlspecialchars(urldecode(fread($file, filesize($filename)))));
 	        	        fclose($file);
 			}
-		} elseif ($dataset == "ts") {
+		} elseif ($dataset === "ts") {
 	                $filename = BASEDIR.$amd."/".$year."/".$month."/".$day."/timestamps.lst";
 			if ( file_exists($filename) ) {
 	        	        $file = fopen($filename,"r");
         	        	$data = str_replace("\n","<br/>",htmlspecialchars(urldecode(fread($file, filesize($filename)))));
 	        	        fclose($file);
 			}
-		} elseif ($dataset == "fi") {
+		} elseif ($dataset === "fi") {
 			$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2.sha512";
 			//chdir(BASEDIR.$amd."/".$year."/".$month."/");
 			if ( file_exists($arcname) ) {
@@ -60,7 +60,7 @@
 		} else {
 			$data = "";
 		}
-		if ( $data == "" ) { $data = "No Data Available.<br/>"; }
+		if ( $data === "" ) { $data = "No Data Available.<br/>"; }
 		return $data;
 	}
 
@@ -106,7 +106,7 @@
 	$serverport = $_SERVER['SERVER_PORT'];
 	if ( isset($_SERVER['HTTPS']) ) { $serverssl = $_SERVER['HTTPS']; } else { $serverssl = ""; }
 	$user = $_SERVER['REMOTE_ADDR'];
-	if ( $user == "::1" or $user == "127.0.0.1" ) { $localuser = 1; } else { $localuser = ""; }
+	if ( $user === "::1" or $user === "127.0.0.1" ) { $localuser = 1; } else { $localuser = ""; }
 
 
 
@@ -126,7 +126,7 @@
 		$count = count($tmpdatasets);
 		for ( $i = 0; $i < $count; $i++ ) {
 			$temp = $linkopts['amd']."-".$linkopts['year']."-".$linkopts['month']."-".$linkopts['day'];
-			if ( $tmpdatasets[$i] == $temp ) { unset($tmpdatasets[$i]); array_values($tmpdatasets); }
+			if ( $tmpdatasets[$i] === $temp ) { unset($tmpdatasets[$i]); array_values($tmpdatasets); }
 		}
 		sort($tmpdatasets);
         }
@@ -159,11 +159,11 @@
 		                $buffer = trim($buffer);
 				$temp = explode(",", $buffer);
 				
-				if ( ($temp[0] == $linkopts['remove_dataset']) and ($temp[1] == $user or $localuser) ) {
+				if ( ($temp[0] === $linkopts['remove_dataset']) and ($temp[1] === $user or $localuser) ) {
 					// this one is being removed.
 					$tempdir = BASEDIR.".temp/".$temp[0];
 					
-				} elseif ( $buffer == "" ) {
+				} elseif ( $buffer === "" ) {
 					//do nothing, empty line
 
 				} else {
@@ -197,7 +197,7 @@
 			$usedports['0'] = 0;
 			while (($buffer = fgets($file)) !== false ) {
 				$buffer = trim($buffer);
-				if ( substr($buffer,0,1) == "#" ) { continue; }
+				if ( substr($buffer,0,1) === "#" ) { continue; }
 				$temp = explode(",", $buffer);
 				$usedports[$temp[4]] = 1;
 			}
@@ -227,7 +227,7 @@
 			        $temp = explode("|", $temp);
 			        $count = count($temp);
 			        for ( $i = 0; $i < $count; $i++) {
-			                if ( $temp[$i] == "" ) { continue; }
+			                if ( $temp[$i] === "" ) { continue; }
 			                $temp2 = explode("-", $temp[$i]);
 					$amd = $temp2[0]; $year = $temp2[1]; $month = $temp2[2]; $day = $temp2[3];
 					$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2";
@@ -277,21 +277,21 @@
 	foreach ($basedir as $amd) {
 		if (file_exists(BASEDIR.$amd."/prevdir.lst")) {
 			echo " <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd.$datasetsurl)."\">";
-			if ( $linkopts['amd'] == $amd ) { echo "<b>".$amd."</b>";} else { echo $amd; }
+			if ( $linkopts['amd'] === $amd ) { echo "<b>".$amd."</b>";} else { echo $amd; }
 			echo "</a>\n";
 			$years = scandir(BASEDIR.$amd);
 			foreach ($years as $year) {
 				if ( is_numeric($year) ) {
 					echo "  <ul>\n";
 					echo "   <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year.$datasetsurl)."\">";
-					if ( $linkopts['amd'] == $amd && $linkopts['year'] == $year ) { echo "<b>".$year."</b>";} else { echo $year; }
+					if ( $linkopts['amd'] === $amd && $linkopts['year'] === $year ) { echo "<b>".$year."</b>";} else { echo $year; }
 					echo "</a>\n";
 					echo "    <ul/>\n";
 					$months = scandir(BASEDIR.$amd."/".$year);
 					foreach ($months as $month) {
 						if ( is_numeric($month) ) {
 							echo "     <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month.$datasetsurl)."\">";
-							if ( $linkopts['amd'] == $amd && $linkopts['year'] == $year && $linkopts['month'] == $month) { 
+							if ( $linkopts['amd'] === $amd && $linkopts['year'] === $year && $linkopts['month'] === $month) { 
 								echo "<b>".date_format(date_create($year."-".$month."-01"),"M")."</b>";} 
 							else { 
 								echo date_format(date_create($year."-".$month."-01"),"M"); }
@@ -301,9 +301,9 @@
 							foreach ($days as $day) {
 								if ( is_numeric($day) && file_exists(BASEDIR.$amd."/".$year."/".$month."/".$day."/softwareservice.lst" ) ) {
 									echo "       <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day.$datasetsurl)."\">";
-									if ( $linkopts['amd'] == $amd && $linkopts['year'] == $year && $linkopts['month'] == $month && $linkopts['day'] == $day) { 
+									if ( $linkopts['amd'] === $amd && $linkopts['year'] === $year && $linkopts['month'] === $month && $linkopts['day'] === $day) { 
 										echo "<b>".$day."</b></a><br/>\n";
-										if ( $linkopts['dataset'] == "ts") {
+										if ( $linkopts['dataset'] === "ts") {
 											echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ts".$datasetsurl).
 											"\"><b>Time Stamps</b></a><br/>\n".
 											getdaydata($amd, $year, $month, $day, "ts")."\n";
@@ -311,7 +311,7 @@
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ts".$datasetsurl).
 											"\">Time Stamps</a><br/>\n";
 										}
-										if ( $linkopts['dataset'] == "ss") {
+										if ( $linkopts['dataset'] === "ss") {
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ss".$datasetsurl).
 											"\"><b>Software Services</b></a><br/>\n".
                                                                                         getdaydata($amd, $year, $month, $day, "ss")."\n";
@@ -319,7 +319,7 @@
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ss".$datasetsurl).
 											"\">Software Services</a><br/>\n";
 										} 
-										if ( $linkopts['dataset'] == "sip") {
+										if ( $linkopts['dataset'] === "sip") {
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=sip".$datasetsurl).
 											"\"><b>Server IP Addresses</b></a><br/>\n".
                                                                                         getdaydata($amd, $year, $month, $day, "sip")."\n";
@@ -328,7 +328,7 @@
 											"\">Server IP Addresses</a><br/>\n";
 
 										} 
-										if ( $linkopts['dataset'] == "cip") {
+										if ( $linkopts['dataset'] === "cip") {
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=cip".$datasetsurl).
 											"\"><b>Client IP Addresses</b></a><br/>\n".
                                                                                         getdaydata($amd, $year, $month, $day, "cip")."\n";
@@ -337,7 +337,7 @@
 	                                                                                echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=cip".$datasetsurl).
 											"\">Client IP Addresses</a><br/>\n";
 										}
-                                                                               	if ( $linkopts['dataset'] == "fi") {
+                                                                               	if ( $linkopts['dataset'] === "fi") {
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi".$datasetsurl).
 											"\"><b>Archive Integrity Check</b></a><br/>\n".
                                                                                         getdaydata($amd, $year, $month, $day, "fi")."\n";
@@ -346,7 +346,7 @@
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi".$datasetsurl).
 											"\">Archive Integrity Check</a><br/>\n";
                                                                                 }
-										if ( ( $activeamd == $amd ) or $activeamd == "nothing" ) {
+										if ( ( $activeamd === $amd ) or $activeamd === "nothing" ) {
 											echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&check=true".$datasetsurl).
 	                                                                                "\">Add to dataset</a> \n";
 										} else {
@@ -378,7 +378,7 @@ if ( $datasets <> "" ) {
 	$temp = explode("|", $datasets);
 	$count = count($temp);
 	for ( $i = 0; $i < $count; $i++) {
-		if ( $temp[$i] == "" ) { continue; }
+		if ( $temp[$i] === "" ) { continue; }
 		$temp2 = explode("-", $temp[$i]);
 		echo $temp2[0]." ".$temp2[1]."/".$temp2[2]."/".$temp2[3]." <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$temp2[0]."&year=".$temp2[1]."&month=".$temp2[2]."&day=".$temp2[3]."&uncheck=true".$datasetsurl)."\">Uncheck</a><br/>\n";
 	}
@@ -401,16 +401,16 @@ if ( file_exists($filename) ) {
 	$file = fopen($filename,"r");
 	while (($buffer = fgets($file)) !== false ) {
 		$buffer = trim($buffer);
-		if ( substr($buffer,0,1) == "#" ) { continue; }
+		if ( substr($buffer,0,1) === "#" ) { continue; }
 		$data = explode(",", $buffer);
-		if ( ($data[1] == $user) or ($localuser) ) {
+		if ( ($data[1] === $user) or ($localuser) ) {
 			$datalines++;
 			if ( $data[1] <> $user ) { $notyours = "NOT YOUR DATASET, Confirm with user at: $data[1]\\n"; } else { $notyours = "";}
 			echo " <li>Logon: $data[2], Password: $data[3], Port: $data[4]<br/>\n ";
         		$temp = explode("|", $data[5]);
 		        $count = count($temp);
 		        for ( $i = 0; $i < $count; $i++) {
-		                if ( $temp[$i] == "" ) { continue; }
+		                if ( $temp[$i] === "" ) { continue; }
 		                $temp2 = explode("-", $temp[$i]);
 		                echo $temp2[0]." ".$temp2[1]."/".$temp2[2]."/".$temp2[3]."<br/>\n";
 		        }
@@ -423,7 +423,7 @@ if ( file_exists($filename) ) {
 	fclose($file);
 }
 
-if ( $datalines == 0 ) {
+if ( $datalines === 0 ) {
         echo " <li>No active data sets</li>\n";
 }
 
