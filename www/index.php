@@ -346,7 +346,7 @@
                                                                                         echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=fi".$datasetsurl).
 											"\">Archive Integrity Check</a><br/>\n";
                                                                                 }
-										if ( ( $activeamd === $amd ) or $activeamd === "nothing" ) {
+										if ( (( $activeamd === $amd ) or ( $activeamd === "nothing" )) and ( strrpos($datasets, $amd."-".$year."-".$month."-".$day) === false  ) ) {
 											echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&check=true".$datasetsurl).
 	                                                                                "\">Add to dataset</a> \n";
 										} else {
@@ -417,6 +417,10 @@ if ( file_exists($filename) ) {
 			echo "<a onclick=\"javascript:return confirm('$notyours\\nRemove active dataset:".str_replace("|","\\n",$data[5])."\\non port: $data[4]');\" href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0])."\">";
 			echo "<font size=-1>Remove this dataset from the Archive AMD</a>";
 			if ( $localuser ) { echo " by $data[1]"; }
+			$dir = BASEDIR.".temp/".$data[0];
+    			$size = `/usr/bin/du -sh $dir`;
+    			$size = substr($size, 0, strpos($size, "\t"));
+    			echo ' Dataset size: '.$size."iB";
 			echo "<br/>&nbsp;</font></li>\n";
 		}
 	}
