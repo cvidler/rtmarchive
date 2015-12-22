@@ -17,51 +17,81 @@
 		// return the extracted zdata stats for browsing
 		$data = "";
 
+		$filename = BASEDIR.$amd."/".$year."/".$month."/".$day;
 		if ($dataset === "ss") {
-			$filename = BASEDIR.$amd."/".$year."/".$month."/".$day."/softwareservice.lst";
-			if ( file_exists($filename) ) {
-				$file = fopen($filename,"r");
-				$data = str_replace("\n","<br/>",htmlspecialchars(urldecode(fread($file, filesize($filename)))));
-				fclose($file);
-			}
+			$filename = $filename."/softwareservice.lst";
 		} elseif ($dataset === "sip") {
-	                $filename = BASEDIR.$amd."/".$year."/".$month."/".$day."/serverips.lst";
-			if ( file_exists($filename) ) {
-	        	        $file = fopen($filename,"r");
-        	        	$data = str_replace("\n","<br/>",htmlspecialchars(urldecode(fread($file, filesize($filename)))));
-	        	        fclose($file);
-			}
+	                $filename = $filename."/serverips.lst";
 		} elseif ($dataset === "cip") {
-	                $filename = BASEDIR.$amd."/".$year."/".$month."/".$day."/clientips.lst";
-			if ( file_exists($filename) ) {
-	        	        $file = fopen($filename,"r");
-        	        	$data = str_replace("\n","<br/>",htmlspecialchars(urldecode(fread($file, filesize($filename)))));
-	        	        fclose($file);
-			}
+	                $filename = $filename."/clientips.lst";
 		} elseif ($dataset === "ts") {
-	                $filename = BASEDIR.$amd."/".$year."/".$month."/".$day."/timestamps.lst";
-			if ( file_exists($filename) ) {
-	        	        $file = fopen($filename,"r");
-        	        	$data = str_replace("\n","<br/>",htmlspecialchars(urldecode(fread($file, filesize($filename)))));
-	        	        fclose($file);
-			}
+	                $filename = $filename."/timestamps.lst";
 		} elseif ($dataset === "fi") {
-			$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2.sha512";
-			//chdir(BASEDIR.$amd."/".$year."/".$month."/");
-			if ( file_exists($arcname) ) {
+			$filename = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2.sha512";
+			if ( file_exists($filename) ) {
 				$retval = "";
-				$retval = exec('sha512sum --status -c "'.$arcname.'" ; echo $?');
-				if ($retval) {
-					$data = "Archive integrity check: <b>FAILED</b><br/>";
+				$retval = exec('sha512sum --status -c "'.$filename.'" ; echo $?');
+				if ( ! $retval === 0 ) {
+					$data = "Archive integrity check: <b><font color=red>FAILED</font></b><br/>";
 				} else {
-					$data = "Archive integrity check: OK<br/>";
+					$data = "Archive integrity check: <b><font color=green>OK</font></b><br/>";
 				}
 			}
 		} else {
 			$data = "";
 		}
+
+
+                if ( file_exists($filename) and $data === "" ) {
+                        $file = fopen($filename,"r");
+                        $data = str_replace("\n","<br/>",htmlspecialchars(urldecode(fread($file, filesize($filename)))));
+                        fclose($file);
+                }
+
+		if ( $dataset === "ts" ) { $data = processtimestamplist($data); }
+
+
 		if ( $data === "" ) { $data = "No Data Available.<br/>"; }
 		return $data;
+	}
+
+
+	function processtimestamplist($timestamplist = "") {
+
+		if ( $timestamplist === "" ) { return ""; }
+
+		$timestamps = explode("<br/>", $timestamplist);
+		$count = count($timestamps);
+
+		// strip readable timestamp, and convert hex string to integer
+		for ( $i=0; $i < $count; $i++ ) {
+			if ( $timestamps[$i] === "" ) { unset($timestamps[$i]); $count--; continue; }
+			$temp = explode(",", $timestamps[$i]);
+			$timestamps[$i] = hexdec($temp[0]);
+		}
+
+		//sort
+		sort($timestamps);
+		//print_r($timestamps);
+
+		//parse for gaps, first interval determines right interval, sanity checked for norms (multiple of 60 seconds)
+		$interval = $timestamps[1] - $timestamps[0];
+		if ( ! ($interval >= 60 and $interval <= 300 and (($interval % 60) === 0) ) ) { return $timestamplist; }	//can't process this return the raw data
+
+		$temp = "";
+		$first = $timestamps[0]; $last = 0;
+		for ( $i=1; $i < $count; $i++ ) {
+			
+			if ( $timestamps[$i] <> $timestamps[$i-1]+$interval ) {
+				$last = $timestamps[$i-1];
+				$temp = $temp.gmdate(DATE_RFC850,$first+$interval)." thru ".gmdate(DATE_RFC850,$last+$interval)."<br/>";
+				$first = $timestamps[$i]; $last = 0;
+			}
+
+		}
+		if ( $last === 0 ) { $last = $timestamps[$i-1]; $temp = $temp.gmdate(DATE_RFC850,$first+$interval)." thru ".gmdate(DATE_RFC850,$last+$interval)."<br/>"; }
+		return $temp;	
+
 	}
 
 	//init linkopts variables
@@ -73,11 +103,10 @@
 	$linkopts['dataset'] = "";
 	$linkopts['datasets'] = "";
 
-	if (count($_GET)) {
+	if ( isset($_GET["link"]) ) {
 	$link = base64_decode($_GET["link"]);
 	if ( strlen($link) ) {
 		$options = explode("&", $link);
-		//print_r($options);
 		$optcount = count($options);
 		for($x = 0; $x < $optcount; $x++) {
 			$opt =explode("=",$options[$x]);
