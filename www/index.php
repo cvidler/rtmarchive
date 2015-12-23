@@ -209,7 +209,8 @@
 			
                         if ( file_exists($tempdir) ) {
 	                        //remove the temp dir if it exists
-                                `rm -rf $tempdir`;
+				array_map('unlink', glob("$tempdir/*"));
+				rmdir($tempdir);
                         }
   
 		}
@@ -252,7 +253,7 @@
 				fclose($file);
 				// create temp dir and extract archives to it
 				$tempdir = BASEDIR.".temp/".$uuid;
-				`mkdir -p $tempdir`;
+				mkdir($tempdir, 0777, true);
 			        $temp = explode("|", $temp);
 			        $count = count($temp);
 			        for ( $i = 0; $i < $count; $i++) {
@@ -262,7 +263,7 @@
 					$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2";
 					if ( !file_exists($arcname) ) { die("***FATAL: Archive $arcname not found. Aborting."); }
 					`cd $tempdir && /usr/bin/tar -xjf $arcname --transform='s/.*\///'`;
-					`rm -f $tempdir/*.lst`;
+					array_map('unlink', glob("$tempdir/*.lst"));
 			        }
 			}
 			unset($port);
@@ -284,6 +285,20 @@
 		}
 	}
 
+function getSymbolByQuantity($bytes) {
+    $symbols = array('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB');
+    $exp = floor(log($bytes)/log(1024));
+
+    return sprintf('%.2f'.$symbols[$exp], ($bytes/pow(1024, floor($exp))));
+}
+
+function get_dir_size($directory) {
+    $size = 0;
+    foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory)) as $file) {
+        $size += $file->getSize();
+    }
+    return $size;
+}
 
 // now onto html
 
@@ -294,7 +309,6 @@
 </head>
 <body>
 <h1>rtmarchive System</h1>
-<h6>Chris Vidler - Dynatrace DCRUM SME 2015</h6>
 
 <table>
 <tr>
@@ -447,9 +461,8 @@ if ( file_exists($filename) ) {
 			echo "<font size=-1>Remove this dataset from the Archive AMD</a>";
 			if ( $localuser ) { echo " by $data[1]"; }
 			$dir = BASEDIR.".temp/".$data[0];
-    			$size = `/usr/bin/du -sh $dir`;
-    			$size = substr($size, 0, strpos($size, "\t"));
-    			echo ' Dataset size: '.$size."iB";
+			$size = getSymbolByQuantity(get_dir_size($dir));
+    			echo ' Dataset size: '.$size;
 			echo "<br/>&nbsp;</font></li>\n";
 		}
 	}
@@ -471,20 +484,18 @@ if ( $datalines === 0 ) {
 </tr>
 <tr>
 <td colspan="2">
-<p><font size=-2>
+<p><font size=-1>
 <?php
-    $dir = BASEDIR;
-    $size = `/usr/bin/du -sh $dir`;
-    $size = substr($size, 0, strpos($size, "\t"));
-    echo 'Archive size: '.$size."iB";
+	$dir = BASEDIR;
+	$size = getSymbolByQuantity(get_dir_size($dir));
+	echo 'Archive size: '.$size;
 
-    $size = `/usr/bin/df -h $dir | tail -n 1`;
-    $size = preg_split("/\s+/",$size);
-    $free = 100 - $size[4];
-    if ( $free <= 10 ) { $free = "<font color=red>$free</font>"; }
-    echo ' - Free space: '.$size[3]."iB ".$free."%";
+	$free = getSymbolByQuantity(disk_free_space($dir));
+	echo " - Free space: $free ";
+	printf("%.1f", (disk_free_space($dir) / disk_total_space($dir)) * 100);
+	echo "%";
 
-?>
+?><br/>Chris Vidler - Dynatrace DCRUM SME 2015
 </font></p>
 </td>
 </tr>
