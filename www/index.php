@@ -90,6 +90,7 @@
 
 		}
 		if ( $last === 0 ) { $last = $timestamps[$i-1]; $temp = $temp.gmdate(DATE_RFC850,$first+$interval)." thru ".gmdate(DATE_RFC850,$last+$interval)."<br/>"; }
+		if ( (($last+$interval) - $first) === 86400 ) { $temp = $temp." Complete<br/>"; } else { $temp = $temp."Incomplete dataset<br/>"; }
 		return $temp;	
 
 	}
