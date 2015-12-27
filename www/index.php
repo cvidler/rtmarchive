@@ -341,6 +341,9 @@ function get_dir_size($directory) {
 <html>
 <head>
 <title>rtmarchive System</title>
+<style>
+	.bold { font-weight: bold; }
+</style>
 </head>
 <body>
 <h1>rtmarchive System</h1>
@@ -355,8 +358,8 @@ $basedir = scandir(BASEDIR);
 foreach ($basedir as $amd) {
 	if (file_exists(BASEDIR.$amd."/prevdir.lst")) {
 		echo " <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd.$datasetsurl)."\">";
-		if ( !($linkopts['amd'] === $amd) ) { echo $amd."</a>";} else { echo "<b>".$amd."</b>";
-		echo "</a>\n";
+		if ( !($linkopts['amd'] === $amd) ) { echo $amd."</a></li>\n"; continue; }
+		echo "<b>".$amd."</b></a>\n";
 		$years = scandir(BASEDIR.$amd);
 		foreach ($years as $year) {
 			if ( !is_numeric($year) ) { 
@@ -364,9 +367,9 @@ foreach ($basedir as $amd) {
 			}
 			echo "  <ul>\n";
 			echo "   <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year.$datasetsurl)."\">";
-			if ( !($linkopts['amd'] === $amd && $linkopts['year'] === $year) ) { echo $year."</a>";} else { echo "<b>".$year."</b>"; 
-			echo "</a>\n";
-			echo "    <ul/>\n";
+			if ( !($linkopts['amd'] === $amd && $linkopts['year'] === $year) ) { echo $year."</a></li>\n</ul>\n"; continue; } 
+			echo "<b>".$year."</b></a>\n";
+			echo "    <ul>\n";
 			$months = scandir(BASEDIR.$amd."/".$year);
 			foreach ($months as $month) {
 				if ( !is_numeric($month) ) { 
@@ -440,11 +443,9 @@ foreach ($basedir as $amd) {
 			}
 			echo "    </ul>\n";
 			echo "   </li>\n";
-			}
 			echo "  </ul>\n";
 		}
 		echo " </li>\n";
-		}
 	}
 }
 ?>
