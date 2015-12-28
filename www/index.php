@@ -1,6 +1,6 @@
 <?php
 // Config
-define("BASEDIR", "/var/spool/rtmarchive/");	// base directory of teh archive data structure.
+define("BASEDIR", "/var/spool/rtmarchive/");	// base directory of the archive data structure.
 define("BASEPORT",9090);			// needs to match available/listening ports in Apache config, or it won't work so well.
 define("NUMPORTS",10);				// "
 
@@ -349,6 +349,9 @@ function get_dir_size($directory) {
 <h1>rtmarchive System</h1>
 
 <table>
+<tr>
+<td colspan="2" align="right"><form action="search.php">Search IP/Software Service: <input type="text" name="searchtxt" size="40"/><input type="submit" value="Search"/></form></td>
+</tr>
 <tr>
 <td width="50%" valign="top">
 <h2>Archive Sources</h2>
