@@ -40,8 +40,8 @@ tgtday=$($DATE -u -d "@$yesterday" +"%d")
 
 #list contents of BASEDIR for 
 for AMD in "$BASEDIR"/*; do
-	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
-	(
+	#while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
+	#(
 	    # only interested if it has got AMD data in it
 	    if [ ! -r "$AMD/prevdir.lst" ]; then continue; fi
 	    AMDNAME=`echo $AMD | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `
@@ -87,7 +87,20 @@ for AMD in "$BASEDIR"/*; do
 				done
 
 			done
+			                
+			# concatenate yearly list files into amd ones (create as needed)
+			# then de-dupe and sort list files
+			for file in timestamps.lst softwareservice.lst serverips.lst clientips.lst serverports.lst; do
+				if [ ! -r "$YEAR/$file" ]; then continue; fi
+				$TOUCH "$AMD"/$file
+				$CAT "$AMD/$file" "$YEAR/$file" >> "$AMD/$file.tmp"
+				rm -f "$AMD"/$file
+				$AWK '{ !a[$0]++ } END { n=asorti(a,c) } END { for (i = 1; i <= n; i++) { print c[i] } }' "$AMD"/$file.tmp > "$AMD"/$file
+				chmod -w "$AMD/$file"
+				rm "$AMD"/$file.tmp
+			done
+
 		done
-	)
+	#)
 done
 
