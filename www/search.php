@@ -117,7 +117,7 @@ if ( $matches === "" ) { $matches = "Nothing found."; }
 </head>
 <body>
 <h1>rtmarchive Search Results</h1>
-<p>Search Query: <?php echo $seachtxt; ?></p>
+<p>Search Query: <?php echo $searchtxt; ?></p>
 <p>Hits</p>
 <p><?php echo $matches; ?></p>
 <p>Data Sets</p>
