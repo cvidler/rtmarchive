@@ -18,91 +18,158 @@ if ( ! isset($_GET['searchtxt']) or @$_GET['searchtxt'] === "" ) {
 	header("Location: /");
 }
 
+function outputProgress($current, $total, $text = 'Searching' ) {
+	echo "<span class='progress' style='position: absolute;z-index:$current;background:#FFF;'>$text: ".round($current / $total * 100)."% </span>";
+	myFlush();
+}
+
+function myFlush() {
+	echo(str_repeat(' ', 256));
+	if (@ob_get_contents()) {
+		@ob_end_flush();
+	}
+	flush();
+}
+
+
 //echo $_GET['searchtxt'];
 $searchtxt = urldecode($_GET['searchtxt']);
 
+?>
+<html>
+<head>
+<title>rtmarchive Search - <?php echo $searchtxt; ?></title>
+<style>
+	.progress { display: block; }
+	.hidden { display: none; }
+</style>
+<script>
+<!--
+	function cssrules(){
+		var rules={}; var ds=document.styleSheets,dsl=ds.length;
+		for (var i=0;i<dsl;++i){
+			var dsi=ds[i].cssRules,dsil=dsi.length;
+			for (var j=0;j<dsil;++j) rules[dsi[j].selectorText]=dsi[j];
+		}
+		return rules;
+	};
+function css_getclass(name,createifnotfound){
+	var rules=cssrules();
+	if (!rules.hasOwnProperty(name)) throw 'todo:deal_with_notfound_case';
+	return rules[name];
+//};
+};
+
+-->
+</script>
+</head>
+<body onload="javascript:css_getclass('.progress').style.display='none';">
+<h1>rtmarchive Search Results</h1>
+<p>Search Query: <?php echo $searchtxt; ?></p>
+<?php
 
 // search archive directory lists
 $hits = "";
 $matches = "";
 $filelist = array('softwareservice.lst','serverips.lst','clientips.lst');
+$count = 0; $total = 0;
 $basedir = scandir(BASEDIR);
+$total = $total + count($basedir);
 foreach ($basedir as $amd) {
-	if ( !file_exists(BASEDIR.$amd."/prevdir.lst")) { 
-		continue; 
+$count++;
+if ( !file_exists(BASEDIR.$amd."/prevdir.lst")) { 
+	continue; 
+}
+
+// search amd list files
+$amdfound = false;
+$temp = "";
+foreach ($filelist as $file) {
+	$temp = file_get_contents(BASEDIR.$amd."/".$file);
+	if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $amdfound = true; }
+}
+if ( !$amdfound ) { continue; }
+
+$years = scandir(BASEDIR.$amd);
+$total = $total + count($years);
+foreach ($years as $year) {
+	$count++;
+	if ( !is_numeric($year) ) {
+		continue;
 	}
 
-	// search amd list files
-	$amdfound = false;
+	// search year list files
+	$yearfound = false;
 	$temp = "";
 	foreach ($filelist as $file) {
 		$temp = file_get_contents(BASEDIR.$amd."/".$file);
-		if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $amdfound = true; }
+		if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $yearfound = true; }
 	}
-	if ( !$amdfound ) { continue; }
-
-	$years = scandir(BASEDIR.$amd);
-	foreach ($years as $year) {
-		if ( !is_numeric($year) ) {
+	if ( !$yearfound ) { continue; }
+							   
+	$months = scandir(BASEDIR.$amd."/".$year);
+	$total = $total + count($months);
+	foreach ($months as $month) {
+		$count++;
+		if ( !is_numeric($month) ) {
 			continue;
 		}
 
-		// search year list files
-		$yearfound = false;
+		// search month list files
+		$monthfound = false;
 		$temp = "";
 		foreach ($filelist as $file) {
 			$temp = file_get_contents(BASEDIR.$amd."/".$file);
-			if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $yearfound = true; }
+			if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $monthfound = true; }
 		}
-		if ( !$yearfound ) { continue; }
-                                   
-		$months = scandir(BASEDIR.$amd."/".$year);
-		foreach ($months as $month) {
-			if ( !is_numeric($month) ) {
+		if ( !$monthfound ) { continue; }
+								 
+		$days = scandir(BASEDIR.$amd."/".$year."/".$month);
+		$total = $total + count($days);
+		foreach ($days as $day) {
+			$count++;
+			if ( ! ( is_numeric($day) && file_exists(BASEDIR.$amd."/".$year."/".$month."/".$day."/softwareservice.lst" ) ) ) {
 				continue;
 			}
 
-			// search month list files
-			$monthfound = false;
-			$temp = "";
+			// search day list files
+			$dayfound = false;
+			$temp = ""; $daydata = "";
 			foreach ($filelist as $file) {
 				$temp = file_get_contents(BASEDIR.$amd."/".$file);
-				if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $monthfound = true; }
+				if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $dayfound = true; $daydata = $daydata.$temp;}
 			}
-			if ( !$monthfound ) { continue; }
-                                     
-			$days = scandir(BASEDIR.$amd."/".$year."/".$month);
-			foreach ($days as $day) {
-				if ( ! ( is_numeric($day) && file_exists(BASEDIR.$amd."/".$year."/".$month."/".$day."/softwareservice.lst" ) ) ) {
-					continue;
-				}
 
-				// search day list files
-				$amdfound = false;
-				$temp = ""; $daydata = "";
-				foreach ($filelist as $file) {
-					$temp = file_get_contents(BASEDIR.$amd."/".$file);
-					if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $amdfound = true; $daydata = $daydata.$temp;}
-				}
-				if ( !$amdfound ) { continue; }
+			//outputProgress($count, $total);
 
-				// we've found the requested data in a day dataset, note it
-				$hits = $hits."|".$amd."-".$year."-".$month."-".$day;
+			if ( !$dayfound ) { continue; }
 
-				// extract the hit so it can be displayed
-				$lines = explode("\n", $daydata);
-				//$keys = array_keys($lines, $searchtxt);
-				//$matches = "";
-				$keys = array_filter($lines, function($value) {
-					    return stripos($value, $GLOBALS['searchtxt']) !== false;
-				});
-				//print_r($keys);
-				$matches = implode("|",$keys);
+			// we've found the requested data in a day dataset, note it
+			$hits = $hits."|".$amd."-".$year."-".$month."-".$day;
 
-			}
+			// extract the hit so it can be displayed
+			$lines = explode("\n", $daydata);
+			//$keys = array_keys($lines, $searchtxt);
+			$matches = "";
+			$keys = array_filter($lines, function($value) {
+					return stripos($value, $GLOBALS['searchtxt']) !== false;
+			});
+			$keys = array_unique(array_values($keys));
+			//print_r($keys);
+			$matches = implode("|",$keys);
+
+			$ahits[$amd][$year."-".$month."-".$day] = $keys;
+			//echo var_dump($ahits);
+
+
 		}
+		outputProgress($count, $total);
 	}
 }
+}
+outputProgress($total + 1, $total + 1, "Loading page");
+
+reset($ahits);
 
 if ( $hits === "" ) { $hits = "Nothing found."; }
 if ( $matches === "" ) { $matches = "Nothing found."; }
@@ -110,17 +177,30 @@ if ( $matches === "" ) { $matches = "Nothing found."; }
 //echo $matches."\n";
 
 ?>
-
-<html>
-<head>
-<title>rtmarchive Search - <?php echo $searchtxt; ?></title>
-</head>
-<body>
-<h1>rtmarchive Search Results</h1>
-<p>Search Query: <?php echo $searchtxt; ?></p>
-<p>Hits</p>
+<h3>Hits</h3>
 <p><?php echo $matches; ?></p>
-<p>Data Sets</p>
-<p><?php echo $hits; ?></p>
+<h3>Data Sets</h3>
+
+<?php
+
+echo "<ul>\n";
+foreach ($ahits as $amd => $dates) {
+echo "<li>".$amd."\n";
+echo "<ul>\n";
+
+foreach ($dates as $date => $data) {
+		echo "<li>$date - ".implode(", ",$data)."</li>\n";
+	}
+
+	echo "</ul>\n";
+	echo "</li>\n";
+}
+echo "</ul>\n";
+
+
+?>
+
+
+
 </body>
 </html>
