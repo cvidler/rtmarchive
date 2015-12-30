@@ -84,6 +84,7 @@ if ( !file_exists(BASEDIR.$amd."/prevdir.lst")) {
 // search amd list files
 $amdfound = false;
 $temp = "";
+$allmatches = "";
 foreach ($filelist as $file) {
 	$temp = file_get_contents(BASEDIR.$amd."/".$file);
 	if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $amdfound = true; }
@@ -102,7 +103,7 @@ foreach ($years as $year) {
 	$yearfound = false;
 	$temp = "";
 	foreach ($filelist as $file) {
-		$temp = file_get_contents(BASEDIR.$amd."/".$file);
+		$temp = file_get_contents(BASEDIR.$amd."/".$year."/".$file);
 		if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $yearfound = true; }
 	}
 	if ( !$yearfound ) { continue; }
@@ -119,7 +120,7 @@ foreach ($years as $year) {
 		$monthfound = false;
 		$temp = "";
 		foreach ($filelist as $file) {
-			$temp = file_get_contents(BASEDIR.$amd."/".$file);
+			$temp = file_get_contents(BASEDIR.$amd."/".$year."/".$month."/".$file);
 			if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $monthfound = true; }
 		}
 		if ( !$monthfound ) { continue; }
@@ -136,7 +137,7 @@ foreach ($years as $year) {
 			$dayfound = false;
 			$temp = ""; $daydata = "";
 			foreach ($filelist as $file) {
-				$temp = file_get_contents(BASEDIR.$amd."/".$file);
+				$temp = file_get_contents(BASEDIR.$amd."/".$year."/".$month."/".$day."/".$file);
 				if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $dayfound = true; $daydata = $daydata.$temp;}
 			}
 
@@ -145,7 +146,7 @@ foreach ($years as $year) {
 			if ( !$dayfound ) { continue; }
 
 			// we've found the requested data in a day dataset, note it
-			$hits = $hits."|".$amd."-".$year."-".$month."-".$day;
+			//$hits = $hits."|".$amd."-".$year."-".$month."-".$day;
 
 			// extract the hit so it can be displayed
 			$lines = explode("\n", $daydata);
@@ -154,9 +155,11 @@ foreach ($years as $year) {
 			$keys = array_filter($lines, function($value) {
 					return stripos($value, $GLOBALS['searchtxt']) !== false;
 			});
+			asort($keys);
 			$keys = array_unique(array_values($keys));
 			//print_r($keys);
 			$matches = implode("|",$keys);
+			$allmatches = $allmatches."|".$matches;
 
 			$ahits[$amd][$year."-".$month."-".$day] = $keys;
 			//echo var_dump($ahits);
@@ -167,33 +170,46 @@ foreach ($years as $year) {
 	}
 }
 }
+
+$temparr = array_unique(explode("|",ltrim(@$allmatches,"|")));
+asort($temparr);
+$allmatches = implode(",<br/>",$temparr);
+
 outputProgress($total + 1, $total + 1, "Loading page");
 
-reset($ahits);
-
-if ( $hits === "" ) { $hits = "Nothing found."; }
-if ( $matches === "" ) { $matches = "Nothing found."; }
+if ( @$ahits == "" ) { $ahits["Nothing found."] = ""; }
+if ( $allmatches == "" ) { $temparr[0] ="Nothing found."; }
 //echo $hits."\n";
 //echo $matches."\n";
 
 ?>
 <h3>Hits</h3>
-<p><?php echo $matches; ?></p>
+
+<?php
+echo "<ul>\n";
+foreach ($temparr as $match) {
+	echo "<li>$match</li>\n";
+}
+echo "</ul>\n";
+?>
+
 <h3>Data Sets</h3>
 
 <?php
 
 echo "<ul>\n";
-foreach ($ahits as $amd => $dates) {
-echo "<li>".$amd."\n";
-echo "<ul>\n";
-
-foreach ($dates as $date => $data) {
-		echo "<li>$date - ".implode(", ",$data)."</li>\n";
+if ( $allmatches === "" ) {
+	echo "<li>No matches in archive data found</li>\n";
+} else {
+	foreach ($ahits as $amd => $dates) {
+		echo "<li>".$amd."\n";
+		echo "<ul>\n";
+		foreach ($dates as $date => $data) {
+			echo "<li>$date - ".implode(", ",$data)."</li>\n";
+		}
+		echo "</ul>\n";
+		echo "</li>\n";
 	}
-
-	echo "</ul>\n";
-	echo "</li>\n";
 }
 echo "</ul>\n";
 
