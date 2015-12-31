@@ -24,6 +24,8 @@ WGET=`which wget`
 GUNZIP=`which gunzip`
 TOUCH=`which touch`
 MKTEMP=`which mktemp`
+CAT=`which cat`
+TAIL=`which tail`
 
 function test {
 	set +e
@@ -91,7 +93,7 @@ for i in 1 2 3; do
 		echo -e "\e[31m***FATAL:\e[0m Can not download directory listing from AMD: $AMDNAME try: ${i}" >&2
 		fail=$((fail + 1))
 	else
-		cat $tmpfile | gunzip -c > $AMDDIR/currdir.lst
+		$CAT $tmpfile | $GUNZIP -c > $AMDDIR/currdir.lst
 		break
 	fi
 	set -e
@@ -129,12 +131,12 @@ while read p; do
 		tmpfile=`$MKTEMP`
 		for i in 1 2 3 ; do
 			set +e
-			$WGET --quiet --no-check-certificate -O "$tmpfile" $URL/RtmDataServlet?cmd=zip_entry\&entry=${p} 
+			$WGET --quiet --no-check-certificate -O "$tmpfile" $URL/RtmDataServlet?cmd=zip_entry\&entry=${p}
 			if [ $? -ne 0 ]; then
 				warn=$((warn + 1))
 	        		debugecho "\e[33m***WARNING:\e[39m Can not download file: ${p} from AMD: $AMDNAME try: ${i}" >&2
 			else
-				cat $tmpfile | gunzip -c > $file
+				$CAT $tmpfile | $GUNZIP -c > $file
 				downloaded=$((downloaded + 1))
 				break
 			fi
@@ -173,6 +175,73 @@ done < <($AWK 'NR==FNR{a[$1]++;next;}!($0 in a)' $AMDDIR/prevdir.lst $AMDDIR/cur
 # finally, make the current dir list the previous one.
 rm $AMDDIR/prevdir.lst
 mv $AMDDIR/currdir.lst $AMDDIR/prevdir.lst
+
+
+
+
+
+# get config
+echo -e "Archiving AMD Config: $AMDNAME"
+# Get data file listing from AMD, try 3 times, abort (FATAL) if failed
+fail=0
+tmpfile=`$MKTEMP`
+for i in 1 2 3; do
+	set +e
+	$WGET --quiet --no-check-certificate -O "$tmpfile" $URL/RtmConfigServlet?cfg_oper=get_cfg_dir
+	if [ $? -ne 0 ]; then
+		echo -e "\e[31m***FATAL:\e[0m Can not download config directory listing from AMD: $AMDNAME try: ${i}" >&2
+		fail=$((fail + 1))
+	else
+		$CAT $tmpfile > $AMDDIR/confdir.lst
+		break
+	fi
+	set -e
+done
+rm $tmpfile
+if [ $fail -ne 0 ]; then echo -e "\e[31m***FATAL:\e[0m Could not download config directory listing from AMD: $AMDNAME Aborting." >&2 ; exit 1; fi
+
+# read current file list and download them all.
+while read p; do
+	# Validate file name is something we want.
+	filesplit=(${p// /,})
+	p=$filesplit
+	if [ "$p"!="0" ]; then
+		# Check for correct folder structure - create if needed
+		ARCDIR=$AMDDIR/$year/$month/$day/conf
+		if [ ! -w "$ARCDIR" ]; then
+			debugecho "***DEBUG: Creating config archive directory: $ARCDIR"
+			mkdir -p "$ARCDIR"
+		fi
+		file=$ARCDIR/$p
+		
+		#if [ -r "$file" ]; then continue; fi    # already exists skip downloading
+		
+		debugecho "***DEBUG: Downloading $p from $AMDNAME to $file"
+		# Try download 3 times
+		warn=0
+		tmpfile=`$MKTEMP`
+		for i in 1 2 3 ; do
+			set +e
+			$WGET --quiet --no-check-certificate -O "$tmpfile" $URL/RtmConfigServlet?cfg_oper=console_get\&cfg_file=$p
+			if [ $? -ne 0 ]; then
+				warn=$((warn + 1))
+				debugecho "\e[33m***WARNING:\e[39m Can not download config file: $p from AMD: $AMDNAME try: ${i}" >&2
+			else
+				downloaded=$((downloaded + 1))
+				$CAT $tmpfile | $GUNZIP -c | $TAIL -n +2 > $file
+				break
+			fi
+			set -e
+		done
+		rm $tmpfile
+		if [ $warn -ne 0 ]; then echo -e "\e[33m***WARNING:\e[39m Could not download config file: $p from AMD: $AMDNAME" >&2 ; warnings=$((warnings + 1)); fi
+	else
+		debugecho "\e[33m***WARNING:\e[39m Unknown config file: $p on AMD: $AMDNAME" >&2
+	fi
+done < <($CAT $AMDDIR/confdir.lst)
+
+
+
 
 echo -ne "Archiving AMD: $AMDNAME complete, downloaded $downloaded"
 if [ $warnings -ne 0 ]; then echo -e " - \e[33mWarnings: $warnings\e[0m"; fi
