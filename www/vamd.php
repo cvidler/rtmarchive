@@ -114,6 +114,7 @@ if (!isset($datasets[$user])) { echo "***FATAL no config. Aborting."; http_respo
 
 // build temp dir variable, use the unique ID
 $tempdir = BASEDIR.".temp/".$hids[$user]."/";
+$confdir = $tempdir."conf/";
 $noarchvie = 0;
 if ( ! file_exists($tempdir) ) { $noarchive = 1; }
 
@@ -192,13 +193,26 @@ if ( $command === "version" ) {
 	exit;
 
 } elseif ( $command === "get_cfg_dir" ) {
-	echo "2d\n";
 	echo "0\n";
-	echo "daves_not_here_man 127\n";
+	$conffiles = array_diff(scandir($confdir),array(".",".."));
+	foreach ($conffiles as $conffile) {
+		if ( $conffile == "0" ) { continue; }
+		//$ts = date("U", filemtime($confdir.$conffile));
+		$ts = filemtime($confdir.$conffile);
+		echo $conffile." ".$ts."\n";
+	}
 	exit;
 
 } elseif ( $command === "console_get" ) {
-	echo "\n";
+	$entry = urldecode($_GET["cfg_file"]);
+	$filename = $confdir.$entry;
+	if ( !file_exists($filename) ) { echo "***FATAL: Config file $entry not found. Aborting."; http_response_code(404); exit; }
+	$data = "";
+	$file = fopen($filename, "r");
+	if ( !$file ) { echo "***FATAL: Config file not readable: $filename. Aborting."; http_response_code(404); exit;}
+	$data = fread($file, filesize($filename));  
+	$data = gzencode($data);
+	echo $data;
 	exit;
 
 

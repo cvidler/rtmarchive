@@ -26,6 +26,8 @@ TOUCH=`which touch`
 MKTEMP=`which mktemp`
 CAT=`which cat`
 TAIL=`which tail`
+HEAD=`which head`
+DATE=`which date`
 
 function test {
 	set +e
@@ -220,21 +222,31 @@ while read p; do
 		# Try download 3 times
 		warn=0
 		tmpfile=`$MKTEMP`
+		TS=""
+		FTS=""
 		for i in 1 2 3 ; do
 			set +e
 			$WGET --quiet --no-check-certificate -O "$tmpfile" $URL/RtmConfigServlet?cfg_oper=console_get\&cfg_file=$p
 			if [ $? -ne 0 ]; then
 				warn=$((warn + 1))
-				debugecho "\e[33m***WARNING:\e[39m Can not download config file: $p from AMD: $AMDNAME try: ${i}" >&2
+				#debugecho "\e[33m***WARNING:\e[39m Can not download config file: $p from AMD: $AMDNAME try: ${i}" >&2
+				echo -e "127" > $file
+				FTS=`TZ=UTC $DATE -u -d @127 +%Y%m%d%H%M.%S`
+				`TZ=UTC $TOUCH -c -t $FTS "$file"`
 			else
 				downloaded=$((downloaded + 1))
-				$CAT $tmpfile | $GUNZIP -c | $TAIL -n +2 > $file
+				$CAT $tmpfile | $GUNZIP -c > $file
+				TS=`$CAT $file | $HEAD -n 1`
+				TS=$((TS / 1000))
+				FTS=`TZ=UTC $DATE -u -d @$TS +%Y%m%d%H%M.%S`
+				`TZ=UTC $TOUCH -c -t $FTS  "$file"`
 				break
 			fi
 			set -e
 		done
 		rm $tmpfile
-		if [ $warn -ne 0 ]; then echo -e "\e[33m***WARNING:\e[39m Could not download config file: $p from AMD: $AMDNAME" >&2 ; warnings=$((warnings + 1)); fi
+																		 
+		#if [ $warn -ne 0 ]; then echo -e "\e[33m***WARNING:\e[39m Could not download config file: $p from AMD: $AMDNAME" >&2 ; warnings=$((warnings + 1)); fi
 	else
 		debugecho "\e[33m***WARNING:\e[39m Unknown config file: $p on AMD: $AMDNAME" >&2
 	fi
