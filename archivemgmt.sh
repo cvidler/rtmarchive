@@ -92,6 +92,7 @@ for DIR in "$BASEDIR"/*; do
 						$SHA512SUM $MONTH/$ARCNAME > $MONTH/$ARCNAME.sha512
 						chmod -w $MONTH/$ARCNAME $MONTH/$ARCNAME.sha512
 						rm -f "$DAY"/*data_* "$DAY"/vdataidx_* "$DAY"/page2transmap_*
+						rm -rf "$DAY"/conf
 					else
 						#failed
 						echo -e "\e[33m***WARNING:\e[0m Couldn't archive data files in: $DAY, will try again next time."
