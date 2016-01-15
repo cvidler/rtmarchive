@@ -156,7 +156,7 @@ if ( $command === "version" ) {
 	$data = "";
 	//$data = `ls -1 $tempdir`;.
 	if ( !file_exists($tempdir) ) { echo "***FATAL: Directory $tempdir not found. Aborting."; http_response_code(404); exit; }
-	$data = implode("\n", array_diff(scandir($tempdir),array(".","..")));
+	$data = implode("\n", array_diff(scandir($tempdir),array(".","..","conf")));
 	if ( $command === "zip_dir" ) { $data = gzencode($data); }
 	echo $data;
 	exit;
