@@ -194,7 +194,7 @@ if ( $command === "version" ) {
 
 } elseif ( $command === "get_cfg_dir" ) {
 	echo "0\n";
-	$conffiles = array_diff(scandir($confdir),array(".",".."));
+	$conffiles = array_diff(scandir($confdir),array(".","..","conf"));
 	foreach ($conffiles as $conffile) {
 		if ( $conffile == "0" ) { continue; }
 		//$ts = date("U", filemtime($confdir.$conffile));
