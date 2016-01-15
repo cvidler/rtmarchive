@@ -157,7 +157,7 @@ if ( $command === "version" ) {
 	//$data = `ls -1 $tempdir`;.
 	if ( !file_exists($tempdir) ) { echo "***FATAL: Directory $tempdir not found. Aborting."; http_response_code(404); exit; }
 	$data = implode("\n", array_diff(scandir($tempdir),array(".","..","conf")));
-	if ( $command === "zip_dir" ) { $data = gzencode($data); }
+	if ( $command === "zip_dir" ) { $data = gzencode($data); header('Content-Encoding: gzip'); }
 	echo $data;
 	exit;
 
@@ -181,7 +181,7 @@ if ( $command === "version" ) {
 	$file = fopen($filename, "r");
 	if ( !$file ) { echo "***FATAL: File not readable: $filename. Aborting."; http_response_code(404); exit;}
 	$data = fread($file, filesize($filename));	
-	if ( $command === "zip_entry" ) { $data = gzencode($data); }
+	if ( $command === "zip_entry" ) { $data = gzencode($data); header('Content-Encoding: gzip'); }
         echo $data;
 	exit;
 
@@ -212,6 +212,7 @@ if ( $command === "version" ) {
 	if ( !$file ) { echo "***FATAL: Config file not readable: $filename. Aborting."; http_response_code(404); exit;}
 	$data = fread($file, filesize($filename));  
 	$data = gzencode($data);
+	header('Content-Encoding: gzip');
 	echo $data;
 	exit;
 
