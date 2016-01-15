@@ -200,6 +200,15 @@ if ( $activeamd == "" ) {
 }
 
 
+function recurseRmdir($dir) {
+  $files = array_diff(scandir($dir), array('.','..'));
+  foreach ($files as $file) {
+    (is_dir("$dir/$file")) ? recurseRmdir("$dir/$file") : unlink("$dir/$file");
+  }
+  return rmdir($dir);
+}
+
+
 // eAMD config setting code
 if ( isset($linkopts['remove_dataset']) )  {
 	// Remove dataset command
@@ -234,8 +243,9 @@ if ( isset($linkopts['remove_dataset']) )  {
 
 		if ( file_exists($tempdir) ) {
 			//remove the temp dir if it exists
-			array_map('unlink', glob("$tempdir/*"));
-			rmdir($tempdir);
+			#array_map('unlink', glob("$tempdir/*"));
+			#rmdir($tempdir);
+			recurseRmdir($tempdir);
 		}
 	}
 	header("Location: /");
@@ -294,7 +304,11 @@ if ( isset($linkopts['add_dataset']) ) {
 				$amd = $temp2[0]; $year = $temp2[1]; $month = $temp2[2]; $day = $temp2[3];
 				$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2";
 				if ( !file_exists($arcname) ) { die("***FATAL: Archive $arcname not found. Aborting."); }
-				`cd $tempdir && /usr/bin/tar -xjf $arcname --transform='s/.*\///'`;
+				#extract files
+				`cd $tempdir && /usr/bin/tar -xjf $arcname --exclude='./conf' --transform='s/.*\///'`;
+				#extract config files
+				`mkdir $tempdir/conf && cd $tempdir/conf && /usr/bin/tar -xjf $arcname ./conf/ --transform='s/.*\///'`;
+				#remove lst files
 				array_map('unlink', glob("$tempdir/*.lst"));
 			}
 		}

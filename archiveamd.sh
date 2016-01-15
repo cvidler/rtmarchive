@@ -230,7 +230,7 @@ while read p; do
 			if [ $? -ne 0 ]; then
 				warn=$((warn + 1))
 				#debugecho "\e[33m***WARNING:\e[39m Can not download config file: $p from AMD: $AMDNAME try: ${i}" >&2
-				echo -e "127" > $file
+				echo -e "127\n" > $file
 				FTS=`TZ=UTC $DATE -u -d @127 +%Y%m%d%H%M.%S`
 				`TZ=UTC $TOUCH -c -t $FTS "$file"`
 			else
