@@ -8,7 +8,7 @@
 
 # Config
 BASEDIR=/var/spool/rtmarchive
-SCRIPTDIR=~/rtmarchive
+SCRIPTDIR=/opt/rtmarchive
 MAXTHREADS=4
 
 

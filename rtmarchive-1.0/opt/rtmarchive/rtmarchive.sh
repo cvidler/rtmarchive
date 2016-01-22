@@ -1,0 +1,1 @@
+/home/data_mine/rtmarchive/rtmarchive.sh

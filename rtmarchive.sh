@@ -5,9 +5,9 @@
 #
 
 #config 
-AMDLIST=/home/data_mine/rtmarchive/amdlist.cfg
+AMDLIST=/etc/amdlist.cfg
 BASEDIR=/var/spool/rtmarchive
-SCRIPTDIR=~/rtmarchive
+SCRIPTDIR=/opt/rtmarchive
 MAXTHREADS=4
 DEBUG=${1:-0}
 
