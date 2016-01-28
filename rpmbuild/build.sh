@@ -4,6 +4,5 @@
 # Usage:
 # build.sh pathtospecfile
 
-
-rpmbuild -ba $1
+rpmbuild -ba --define "_topdir $(pwd)" --define "_tmpdir %topdir/tmp" --define "dist .el7" $1
 

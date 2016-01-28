@@ -14,7 +14,33 @@ SOURCE0 : %{name}-%{version}.tar.gz
 URL: https://github.com/cvidler/rtmarchive
 BuildArch: x86_64
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Requires: httpd >= 2.4,php >= 5.4,bash,touch,tar,bzip2,sha512sum,gawk,wget,wc,gunzip,mktemp,date,chmod,jobs
+Requires: httpd >= 2.4,php >= 5.4,bash >= 4.2,tar,bzip2,gawk,wget,gzip,coreutils,cronie,checkpolicy,policycoreutils,policycoreutils-python
+Requires(pre): shadow-utils,glibc-common
+Requires(postun): shadow-utils
+
+
+%pre
+/usr/bin/getent passwd %{name} || /usr/sbin/useradd -r -s /sbin/nologin %{name}
+
+%postun
+semodule -r rtmarchivepol
+firewall-cmd --permanent --remove-port 80/tcp
+firewall-cmd --permanent --remove-port 9090-9099/tcp
+firewall-cmd --reload
+apache-ctl graceful
+/usr/sbin/userdel %{name}
+
+%post
+firewall-cmd --permanent --add-port 80/tcp
+firewall-cmd --permanent --add-port 9090-9099/tcp
+firewall-cmd --reload
+mkdir -p /var/spool/rtmarchive
+systemctl enable httpd.service
+systemctl start httpd.service
+crontab -u %{name} /opt/rtmarchive/cron/crontab
+echo Compiling SELinux policy, may take a minute
+cd /opt/rtmarchive/sepol
+./compilepolicy.sh
 
 
 %description
@@ -45,8 +71,9 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 #%config(noreplace) %{_sysconfdir}/%{name}/%{name}.conf
 #%{_bindir}/*
-/tmp/*
-/root/*
+/etc/*
+/opt/rtmarchive/*
+/var/www/rtmarchive/*
 
 
 %changelog
