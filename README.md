@@ -61,15 +61,14 @@ Stores all active AMD instances 'data set'. Includes originating users client IP
 Apache 2.4 compatible config file, suitable from RHEL7/CentOS7.
 
 ## RPM package
-Installs amdlist.cfg in /etc/
-Installs apache config in /etc/httpd/conf.d/
-Installs scripts in /opt/rtmarchive/
-Installs web code in /var/www/rtmarchive/
-Creates /var/spool/rtmarchive/
-Adds rtmarchive user
-Adds cron entries for rtmarchive user
-Compiles and installs SELinux policies
-Opens firewall ports for web components
-Enables/starts apache (httpd)
-
+- Installs amdlist.cfg in /etc/
+- Installs apache config in /etc/httpd/conf.d/
+- Installs scripts in /opt/rtmarchive/
+- Installs web code in /var/www/rtmarchive/
+- Creates /var/spool/rtmarchive/
+- Adds rtmarchive user
+- Adds cron entries for rtmarchive user
+- Compiles and installs SELinux policies
+- Opens firewall ports for web components
+- Enables/starts apache (httpd)
 
