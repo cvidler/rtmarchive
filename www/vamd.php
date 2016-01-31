@@ -137,7 +137,7 @@ if ( $command === "version" ) {
 // os=Red Hat Enterprise Linux Server release 6.6 (Santiago)
 // instances=true
 	$release = file_get_contents("/etc/redhat-release");
-	echo "ND-RTM v. ndw.12.3.0.000 rtmarchive Emulated AMD\n";
+	echo "ND-RTM v. ndw.13.0.0.000 rtmarchive Emulated AMD\n";
 	echo "time_stamp=".round(microtime(true) * 1000)."\n";
 	echo "os=".str_replace(array("\r","\n"), "", $release)."\n";
 	echo "instances=true\n";
