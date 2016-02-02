@@ -19,7 +19,6 @@ RUMPORT=4183
 RUMUSER=rumcaccess
 RUMHASH=1ec72b5061df466c929f2cc4eb1d07a0
 
-
 # Start of script - do not edit below
 set -euo pipefail
 IFS=$',\n\t'
@@ -31,9 +30,8 @@ UPDATELIST=${1:-0}
 DEBUG=${2:-0}
 
 
-
 function debugecho {
-        if [ $DEBUG -ne 0 ]; then echo -e "$@"; fi
+        if [ $DEBUG -ne 0 ]; then echo -e "\e[2m***DEBUG\n$@\e[0m\n"; fi
 	}
 
 function derumpassword {
@@ -57,11 +55,19 @@ urlencode() {
 
 RUMPASS=$(derumpassword $RUMHASH)
 
+echo "rtmarchive System: RUM Console AMD Query script"
+echo "Chris Vidler - Dynatrace DCRUM SME, 2016"
+echo ""
 
+#query RUMC
+echo "Connecting to RUM Console on: $RUMPROT://$RUMADDR:$RUMPORT/"
 #query RUMC server for XML data of all devices
 #XML=`wget --no-check-certificate -q --header="Accept: application/xml" -O - --user '$RUMUSER' --password '$RUMPASS' $RUMPROT://$RUMADDR:$RUMPORT/cxf/rest/backup`
-XML=`wget --no-check-certificate -q --header="Accept: application/xml" -O - --user "$RUMUSER" --password "$RUMPASS" $RUMPROT://$RUMADDR:$RUMPORT/cxf/rest/backup`
 
+set +e
+XML=`wget --no-check-certificate -q --header="Accept: application/xml" -O - --user "$RUMUSER" --password "$RUMPASS" $RUMPROT://$RUMADDR:$RUMPORT/cxf/rest/backup`
+if [ $? -ne 0 ]; then echo -e "\e[31m***FATAL:\e[0m RUM Console on $RUMPROT://$RUMADDR:$RUMPORT/ not responding/bad logon/etc." ; exit; fi
+set -e
 debugecho "$XML"
 
 
@@ -81,11 +87,7 @@ PARSED=`echo -e $XML | $AWK ' BEGIN { FS="|"; RS="</devices>"; OFS=","; } match(
 #12.4 NG AMDs are different.
 PARSEDNG=`echo -e $XML | $AWK ' BEGIN { FS="|"; RS="</devices>"; OFS=","; } match($0,"<name>([a-zA-Z0-9]*?)</name><type>0<.+?\"IS_HTTPS\" value=\"([a-z]+?)\"/>.*?\"PASSWORD\" value=\"([a-fA-F0-9]+?)\"/>.+?\"PORT\" value=\"([0-9]+?)\"/>.*?\"IP\" value=\"([^\"]*?)\"/>.*?\"VERSION\" value=\"([^\"]*?)\"/>.*?\"USER\" value=\"([^\"]*?)\"/>",a)  { print a[1],a[2],a[4],a[3],a[5],a[6],a[7] }'`
 
-#debugecho "---"
-#debugecho "$PARSED"
-#debugecho "---"
-#debugecho "$PARSEDNG"
-#debugecho "---"
+echo "Parsing response from RUM Console...."
 
 IFS=$''
 PARSED=`echo -e "$PARSED\n$PARSEDNG"`
@@ -93,6 +95,8 @@ debugecho $PARSED
 
 if [ $UPDATELIST -ne 1 ]; then AMDLIST=/dev/null; fi
 
+
+echo "Creating $AMDLIST output"
 IFS=$', '
 echo -n "" | tee $AMDLIST
 echo "# rtmarchive AMD List" | tee -a $AMDLIST
@@ -111,21 +115,31 @@ echo $PARSED | while read a b c d e f g; do
 	g=$(urlencode $g)
 	url=$b://$g:$d@$e:$c/
 	#check connection to AMD
+	set +e
 	RETURN=`wget --no-check-certificate -q --header="Accept: application/xml" -O - $url/RtmDataServlet?cmd=version`
-	#debugecho $RETURN
+	if [ $? -ne 0 ]; then RETURN=; fi
+	set -e
+	debugecho $RETURN
 	if [[ $RETURN == *"Emulated"* ]]; then
 		#Archive AMD, disable it.
-		echo "# AMD '$a' is an archive AMD. Disabling it." | tee -a $AMDLIST
+		echo -en "\e[2m"
+		echo "# AMD '$a' ($e:$c) is an archive AMD. Disabling it." | tee -a $AMDLIST
 		echo "D,$url,$a" | tee -a $AMDLIST
+		echo -en "\e[0m"
 	elif [[ $RETURN == "" ]]; then
 		#AMD returned no version data? not working? disable it
-		echo "# AMD '$a' returned no version info, disabling it." | tee -a $AMDLIST
+		echo -e "\e[33m***WARNING: No response from AMD '$a' ($e:$c)\e[0m\e[2m"
+		echo "# AMD '$a' ($e:$c) returned no version info or not responding, disabling it." | tee -a $AMDLIST
 		echo "D,$url,$a" | tee -a $AMDLIST
+		echo -en "\e[0m"
 	else
+		echo -en "\e[32m"
+		echo "# AMD '$a' ($e:$c) version: $f active." | tee -a $AMDLIST
 		echo "A,$url,$a" | tee -a $AMDLIST
+		echo -en "\e[0m"
 	fi
 
 done;
 
-
+echo -e "\e[0mCompleted."
 
