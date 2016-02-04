@@ -2,14 +2,17 @@
 # Chris Vidler - Dynatrace DCRUM SME 2015
 #
 # Builds amdlist.cfg from querying RUM console.
-# parameters
+# parameters:
+# queryrumc.sh [update] [debug] [-e password] 
 # 0|1	update amdlist.cfg file in path below default 0 OFF
 # 0|1	debug output debug info. default 0 OFF
+# -e	encrypt a password for RUMC access used to add RUMC entries to rumc.cfg
+#		(update and debug paramaters are ignored, not RUMC connection is made)
 #
 
 #config 
 RUMCCONF=/etc/rumc.cfg
-AMDLIST=/tmp/amdlist.cfg
+AMDLIST=/etc/amdlist.cfg
 
 
 
@@ -29,18 +32,23 @@ TEE=`which tee`
 #command line parameters
 UPDATELIST=${1:-0}
 DEBUG=${2:-0}
+ENCODE=${3:-0}
+EPASS=${4:-0}
 
+
+
+RUMKEY=6f018ccd57a6f1d5757a13674a75c1c2
 
 function debugecho {
         if [ $DEBUG -ne 0 ]; then echo -e "\e[2m***DEBUG\n$@\e[0m\n"; fi
 	}
 
 function derumpassword {
-	echo `printf %s "$@" | $XXD -r -p | $OPENSSL enc -aes-128-ecb -d -K 6f018ccd57a6f1d5757a13674a75c1c2`
+	echo `echo "$@" | $XXD -r -p | $OPENSSL enc -aes-128-ecb -d -K $RUMKEY`
 }
 
 function rumpassword {
-	echo `printf %s "$@" | $OPENSSL enc -aes-128-ecb -e -K 6f018ccd57a6f1d5757a13674a75c1c2 | $XXD -p`
+	echo `echo $@ | $OPENSSL enc -aes-128-ecb -e -K $RUMKEY | $XXD -p`
 }
 
 urlencode() {
@@ -58,14 +66,23 @@ urlencode() {
 }
 
 
-
 echo "rtmarchive System: RUM Console AMD Query script"
 echo "Chris Vidler - Dynatrace DCRUM SME, 2016"
 echo ""
 
-echo $(derumpassword "1ec72b5061df466c929f2cc4eb1d07a0")
-echo $(rumpassword "P@ssw0rd1")
-echo $(derumpassword "8aa3bdb54896cabde5675ed4ab662f6a")
+if [ $ENCODE == "-e" ]; then 
+	echo -e "Encoded password: $(rumpassword $EPASS)" 
+	echo -e "Complete"
+	exit
+fi
+
+
+if [ $UPDATELIST -ne 1 ]; then AMDLIST=/dev/null; fi
+if [ ! -w $AMDLIST ]; then
+	echo -e "\e[31m*** FATAL:\e[0m Can't update $AMDLIST"
+	exit
+fi
+echo -n "" | $TEE $AMDLIST
 
 IFS=", "
 echo `$CAT $RUMCCONF` | while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
@@ -108,8 +125,6 @@ echo `$CAT $RUMCCONF` | while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHA
 	IFS=$''
 	PARSED=`echo -e "$PARSED\n$PARSEDNG"`
 	debugecho $PARSED
-	
-	if [ $UPDATELIST -ne 1 ]; then AMDLIST=/dev/null; fi
 	
 	
 	echo "Creating $AMDLIST output"
