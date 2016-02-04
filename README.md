@@ -17,6 +17,7 @@ Long term archiving system from rtm data files produced by Dynatrace DCRUM
 - policycoreutils-python
 - shadow-utils
 - glibc-common
+- openssl
 
 Tested against:
 - DCRUM 12.3, 12.4
@@ -28,21 +29,39 @@ Tested against:
 `rtmarchive.sh`
 Main script, cron this hourly.
 Parses amdlist.cfg, spawns a copy of archiveamd.sh for each. Can be 'multi-threaded' configure number of spawned processes in script (MAXTHREADS variable).
-Accepts one parameter, if a singel 1 is passed, debug output is produced.
+Accepts one parameter, if a single 1 is passed, debug output is produced.
 
 `archiveamd.sh`
 Called from the main script, does the work.
-Collects any outstadning data files, and collects the config files. Saves to archive directory.
+Collects any outstanding data files, and collects the config files. Saves to archive directory.
 Not designed to be executed directly.
 
 `archivemgmt.sh`
 Executed nightly from cron, processes zdata producing lists of data (client/server IPs, software services, timestamps) for later searching, and archives them for space/integrity.
+Accepts one parameter, if a single 1 is passed, debug output is produced.
 
 `archivemgmtindex.sh`
 Called nightly from cron, takes produced data lists, and aggregates/indexes them for faster searching.
+Accepts one parameter, if a single 1 is passed, debug output is produced.
+
+`queryrumc.sh`
+Called nightly from cron, takes /etc/rumc.cfg file, and queries each RUM Console instance listed producing a list of AMDs writes to /etc/amdlist.cfg for use by rtmarchive.sh
+Works in two modes, normally:
+
+accepts two parameters, a binary 0|1 whether to update /etc/amdlist.cfg or not, another binary 0|1 for debug output.
+
+Password encodig mode:
+
+accepts four parameters, 0 to not update cfg file, 0 for no debug output, -e to enable password encoding, and finally the password to encode.
+The encoded password is used to add entries to the /etc/rumc.cfg file.
 
 `amdlist.cfg`
 CSV format file listing the AMDs by name, and URL.
+
+`rumc.cfg`
+CSV format file listing the RUM console servers
+
+name,protocol (http/https),address,port (4183 typically),username,encoded password
 
 `index.php`
 Archive system repository viewer. Browse archive repository, and optionally create active AMD instances to serve archived data to a CAS.
