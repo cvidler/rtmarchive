@@ -13,7 +13,7 @@
 #config 
 RUMCCONF=/etc/rumc.cfg
 AMDLIST=/etc/amdlist.cfg
-
+DEBUG=0
 
 
 
@@ -30,10 +30,53 @@ XXD=`which xxd`
 TEE=`which tee`
 
 #command line parameters
-UPDATELIST=${1:-0}
-DEBUG=${2:-0}
-ENCODE=${3:-0}
-EPASS=${4:-0}
+ENCODE=0
+UPDATELIST=0
+OPTS=1
+while getopts ":uhde:c:a:" OPT; do
+	case $OPT in
+		u)
+			UPDATELIST=1
+			OPTS=1
+			;;
+		h)
+			OPTS=0	#show help
+			;;
+		d)
+			DEBUG=1
+			;;
+		e)
+			OPTS=1
+			ENCODE=-e
+			EPASS=$OPTARG
+			;;
+		c)
+			RUMCCONF=$OPTARG
+			;;
+		a)
+			AMDLIST=$OPTARG
+			;;
+		\?)
+			OPTS=0 #show help
+			echo "*** FATAL: Invalid argument -$OPTARG."
+			;;
+		:)
+			OPTS=0 #show help
+			echo "*** FATAL: argument -$OPTARG requires parameter."
+			;;
+	esac
+done
+
+if [ $OPTS -eq 0 ]; then
+	echo -e "*** INFO: Usage: $0 [-h] [-u] [-a amdlist] [-c rumcconfig] [-e password]"
+	echo -e "-h This help"
+	echo -e "-u Update AMD list"
+	echo -e "-a Full path to amdlist file, default $AMDLIST"
+	echo -e "-c Full path to rumcconfig file, default $RUMCCONF"
+	echo -e ""
+	echo -e "-e password Encode a RUMC password"
+	exit 0
+fi
 
 
 

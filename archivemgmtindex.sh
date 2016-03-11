@@ -10,18 +10,49 @@
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=/opt/rtmarchive
 MAXTHREADS=4
-
+DEBUG=0
 
 # Script below do not edit
 set -euo pipefail
 IFS=$',\n\t'
-DEBUG=${1:-0}
 AWK=`which awk`
 CAT=`which cat`
 DATE=`which date`
 JOBS=`which jobs`
 WC=`which wc`
 TOUCH=`which touch`
+
+
+# command line arguments
+OPTS=1
+while getopts ":dhb:" OPT; do
+	case $OPT in
+		h)
+			OPTS=0  #show help
+			;;
+		d)
+			DEBUG=1
+			;;
+		b)
+			BASEDIR=$OPTARG
+			;;
+		\?)
+			OPTS=0 #show help
+			echo "*** FATAL: Invalid argument -$OPTARG."
+			;;
+		:)
+			OPTS=0 #show help
+			echo "*** FATAL: argument -$OPTARG requires parameter."
+			;;
+	esac
+done
+
+if [ $OPTS -eq 0 ]; then
+	echo -e "*** INFO: Usage: $0 [-h] [-b basearchivedir]"
+	echo -e "-h This help. Optional"
+	echo -e "-b basearchivedir Archive directory path. Optional. Default: $BASEDIR"
+	exit 0
+fi
 
 
 function debugecho {

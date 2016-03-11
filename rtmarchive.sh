@@ -9,7 +9,7 @@ AMDLIST=/etc/amdlist.cfg
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=/opt/rtmarchive
 MAXTHREADS=4
-DEBUG=${1:-0}
+DEBUG=0
 
 
 
@@ -19,6 +19,44 @@ IFS=$',\n\t'
 AWK=`which awk`
 JOBS=`which jobs`
 WC=`which wc`
+
+#command line parameters
+OPTS=1
+while getopts ":hda:b:" OPT; do
+	case $OPT in
+		h)
+			OPTS=0  #show help
+			;;
+		d)
+			DEBUG=1
+			;;
+		a)
+			AMDLIST=$OPTARG
+			;;
+		b)
+			BASEDIR=$OPTARG
+			;;
+		\?)
+			OPTS=0 #show help
+			echo "*** FATAL: Invalid argument -$OPTARG."
+			;;
+		:)
+			OPTS=0 #show help
+			echo "*** FATAL: argument -$OPTARG requires parameter."
+			;;
+	esac
+done
+
+if [ $OPTS -eq 0 ]; then
+	echo -e "*** INFO: Usage: $0 [-h] [-a amdlist] [-b basearchivedir]"
+	echo -e "-h This help"
+	echo -e "-u Update AMD list"
+	echo -e "-a Full path to amdlist file, default $AMDLIST"
+	echo -e "-b Full path to basearchivedir, default $BASEDIR"
+	exit 0
+fi
+
+
 
 # Some sanity checking of the config parameters above
 if [ ! -r "$AMDLIST" ]
@@ -52,7 +90,8 @@ echo
 $AWK -F"," '$1=="A" { print $3","$2 } ' $AMDLIST | ( while read p q; do 
 	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
 	echo -e "Launching amdarchive script for: ${p}"
-	$SCRIPTDIR/archiveamd.sh "${p}" "${q}" "$BASEDIR" $DEBUG &
+	if [ $DEBUG -ne 0 ]; then DODEBUG=-d; fi
+	$SCRIPTDIR/archiveamd.sh -n "${p}" -u "${q}" -b "$BASEDIR" $DODEBUG &
 done; wait
 )
 

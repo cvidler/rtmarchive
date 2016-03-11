@@ -3,10 +3,14 @@
 #
 # called from rtmarchive.sh connects to an AMD determines teh delta of data files and downloads to storage
 #
-# Parameters:  name url basedir
-# name: name to use for AMD, human readable, must be unique or bad stuff will happen
-# url: url to use to connect tot he AMD, include logon credentials
-# basedir: where to save stuff.
+# Parameters:  -n name -u url -b basedir [-d]
+# -n name: name to use for AMD, human readable, must be unique or bad stuff will happen
+# -u url: url to use to connect tot he AMD, include logon credentials
+# -b basedir: where to save stuff.
+# -d: debug
+
+# Config defaults
+DEBUG=0
 
 
 
@@ -14,11 +18,11 @@
 set -euo pipefail
 IFS=$',\n\t'
 
-AMDNAME=${1:-}
-URL=${2:-}
-BASEDIR=${3:-}
-DEBUG=${4:-0}
-AMDDIR=$BASEDIR/$AMDNAME
+#AMDNAME=${1:-}
+#URL=${2:-}
+#BASEDIR=${3:-}
+#DEBUG=${4:-0}
+#AMDDIR=$BASEDIR/$AMDNAME
 AWK=`which awk`
 WGET=`which wget`
 GUNZIP=`which gunzip`
@@ -43,6 +47,66 @@ function test {
 function debugecho {
 	if [ $DEBUG -ne 0 ]; then echo -e "$@"; fi
 }
+
+
+# command line arguments
+AMDNAME=0
+BASEDIR=0
+URL=0
+NSET=0
+BSET=0
+USET=0
+OPTS=1
+while getopts ":dhn:b:u:" OPT; do
+	case $OPT in
+		h)
+			OPTS=0  #show help
+			;;
+		d)
+			DEBUG=1
+			;;
+		n)
+			if [ $NSET -ne 0 ] ; then OPTS=0; fi
+			AMDNAME=$OPTARG
+			NSET=1
+			OPTS=1
+			;;
+		b)
+			if [ $BSET -ne 0 ]; then OPTS=0; fi
+			BASEDIR=$OPTARG
+			BSET=1
+			OPTS=1
+			;;
+		u)
+			if [ $USET -ne 0 ]; then OPTS=0; fi
+			URL=$OPTARG
+			USET=1
+			OPTS=1
+			;;
+		\?)
+			OPTS=0 #show help
+			echo "*** FATAL: Invalid argument -$OPTARG."
+			;;
+		:)
+			OPTS=0 #show help
+			echo "*** FATAL: argument -$OPTARG requires parameter."
+			;;
+	esac
+done
+
+if [ $USET -eq 0 ] || [ $BSET -eq 0 ] || [ $USET -eq 0 ]; then OPTS=0; fi
+
+if [ $OPTS -eq 0 ]; then
+	echo -e "*** INFO: Usage: $0 [-h] -n amdname -u amdurl -b basearchivedir"
+	echo -e "-h This help"
+	echo -e "-n amdname AMD descriptive name. Required"
+	echo -e "-u amdurl AMD connection url. Required"
+	echo -e "-b basearchivedir Archive directory path. Required"
+	exit 0
+fi
+
+
+AMDDIR=$BASEDIR/$AMDNAME
 
 
 #check passed parameters
