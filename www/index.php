@@ -25,6 +25,8 @@ function getdaydata($amd, $year, $month, $day, $dataset = "ss") {
 		$filename = $filename."/clientips.lst";
 	} elseif ($dataset === "ts") {
 		$filename = $filename."/timestamps.lst";
+	} elseif ($dataset === "ver") {
+		$filename = $filename."/versions.lst";
 	} elseif ($dataset === "fi") {
 		$filename = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2.sha512";
 		if ( file_exists($filename) ) {
@@ -432,6 +434,13 @@ foreach ($basedir as $amd) {
 							} else {
 								echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=cip".$datasetsurl).
 									"\">Client IP Addresses</a><br/>\n";
+							}
+							if ( $linkopts['dataset'] === "ver") {
+								echo "        <b>AMD Version</b><br/>\n".
+									getdaydata($amd, $year, $month, $day, "ver")."\n";
+							} else {
+								echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&dataset=ver".$datasetsurl).
+									"\">AMD Version</a><br/>\n";
 							}
 							if ( $linkopts['dataset'] === "fi") {
 								echo "        <b>Archive Integrity Check</b><br/>\n".

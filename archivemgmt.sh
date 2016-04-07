@@ -101,6 +101,7 @@ for DIR in "$BASEDIR"/*; do
 					for ZDATA in $DAY/zdata_*; do
 						debugecho "***DEBUG: Processing: $ZDATA"
 						$AWK -F" " '$1=="#TS:" { print $2", "strftime("%c",strtonum("0x"$2),1); }' "$ZDATA" >> "$DAY"/timestamps.lst.tmp
+						$AWK -F" " '$1=="V" { printf("%s.%s.%s.%s", $2,$3,$4,$5) }' "$ZDATA" >> "$DAY"/versions.lst.tmp
 						$AWK -F" " '$1=="U" { a[$7]++ } END { for (b in a) {print b} }' "$ZDATA" | 
 							$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
 						$AWK -F" " '$1=="U" { a[$2]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/serverips.lst.tmp
@@ -111,7 +112,7 @@ for DIR in "$BASEDIR"/*; do
 
 					if [ $updated -ne 0 ]; then
 						# de-dupe and sort list files
-						for file in timestamps.lst softwareservice.lst serverips.lst clientips.lst serverports.lst; do
+						for file in timestamps.lst softwareservice.lst serverips.lst clientips.lst serverports.lst versions.lst; do
 							$AWK '{ !a[$0]++ } END { n=asorti(a,c) } END { for (i = 1; i <= n; i++) { print c[i] } }' "$DAY"/$file.tmp > "$DAY"/$file
 							chmod -w "$DAY"/$file
 							rm "$DAY"/$file.tmp
