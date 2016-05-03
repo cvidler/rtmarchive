@@ -100,13 +100,19 @@ for DIR in "$BASEDIR"/*; do
 				if [ $ZCOUNT -ne 0 ]; then if [ $archivedelay -gt 86400 ]; then
 					for ZDATA in $DAY/zdata_*; do
 						debugecho "***DEBUG: Processing: $ZDATA"
-						$AWK -F" " '$1=="#TS:" { print $2", "strftime("%c",strtonum("0x"$2),1); }' "$ZDATA" >> "$DAY"/timestamps.lst.tmp
+						# Grab timestamp from zdata contents (doesn't work on HS AMD zdata, so disabling)
+						#$AWK -F" " '$1=="#TS:" { print $2", "strftime("%c",strtonum("0x"$2),1); }' "$ZDATA" >> "$DAY"/timestamps.lst.tmp
+						# Grab timestamp from file name						
+						`echo $ZDATA | $AWK -F"_" ' { print strftime("%F %T",strtonum("0x"$2),1); }' >> "$DAY"/timestamps.lst.tmp`
+						# grab version from non HS AMD zdata						
 						$AWK -F" " '$1=="V" { printf("%s.%s.%s.%s", $2,$3,$4,$5) }' "$ZDATA" >> "$DAY"/versions.lst.tmp
-						$AWK -F" " '$1=="U" { a[$7]++ } END { for (b in a) {print b} }' "$ZDATA" | 
+						# grab version from HS AMD zdata
+						$AWK -F" " '$1=="#Producer:" { sub("ndw.","" , $2); print $2 }' "$ZDATA" >> "$DAY"/versions.lst.tmp 
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' "$ZDATA" | 
 							$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
-						$AWK -F" " '$1=="U" { a[$2]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/serverips.lst.tmp
-						$AWK -F" " '$1=="U" { a[$3]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/clientips.lst.tmp
-						$AWK -F" " '$1=="U" { a[$6]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/serverports.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/serverips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/clientips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/serverports.lst.tmp
 						updated=1
 					done
 
