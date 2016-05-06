@@ -87,6 +87,7 @@ echo -e "`$AWK -F"," '$1=="A" { print " + " $3 "" } ' $AMDLIST`"
 echo -e "\e[2m`$AWK -F"," '$1=="D" { print " - " $3 " Disabled" } ' $AMDLIST`\e[0m"
 echo
 
+DODEBUG=""
 $AWK -F"," '$1=="A" { print $3","$2 } ' $AMDLIST | ( while read p q; do 
 	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
 	echo -e "Launching amdarchive script for: ${p}"
