@@ -290,9 +290,9 @@ while read p; do
 			# Proces contents here
 			debugecho "[$HSAMD] [${f}]", 2
 			extract=0
-			if [[ ${f} =~ "zdata_.*_t_vol" ]]; then
+			if [[ ${f} =~ ^zdata_.*_t_vol$ ]]; then
 				extract=1
-			elif [[ ${f} =~ "zdata_.*_t" ]]; then
+			elif [[ ${f} =~ ^zdata_.*_t$ ]]; then
 				extract=2
 			else
 				extract=0
