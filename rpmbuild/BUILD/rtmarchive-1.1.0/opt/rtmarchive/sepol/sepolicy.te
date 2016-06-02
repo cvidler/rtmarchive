@@ -1,0 +1,26 @@
+module rtmarchivepol 1.1;
+
+require {
+	type websm_port_t;
+	type httpd_t;
+	type configfs_t;
+	type user_home_t;
+	type var_spool_t;
+	type unreserved_port_t;
+	class tcp_socket { name_bind name_connect };
+	class dir { read write create add_name remove_name rmdir getattr setattr };
+	class file { read write create open setattr unlink };
+}
+
+#============= httpd_t ==============
+
+allow httpd_t unreserved_port_t:tcp_socket { name_bind name_connect };
+
+allow httpd_t user_home_t:file { read open write };
+
+allow httpd_t websm_port_t:tcp_socket name_bind;
+
+allow httpd_t var_spool_t:dir { read write create add_name remove_name rmdir setattr };
+allow httpd_t var_spool_t:file { write create open setattr unlink };
+
+dontaudit httpd_t configfs_t:dir getattr;
