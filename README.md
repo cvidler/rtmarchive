@@ -18,6 +18,7 @@ Long term archiving system from rtm data files produced by Dynatrace DCRUM
 - shadow-utils
 - glibc-common
 - openssl
+- xsltproc
 
 Tested against:
 - DCRUM 12.3, 12.4
@@ -54,6 +55,9 @@ Password encodig mode:
 
 accepts four parameters, 0 to not update cfg file, 0 for no debug output, -e to enable password encoding, and finally the password to encode.
 The encoded password is used to add entries to the /etc/rumc.cfg file.
+
+`rumcquery.xslt`
+Required by `queryrumc.sh` to pre-process (using xsltproc) the returned data from RUM Console.
 
 `amdlist.cfg`
 CSV format file listing the AMDs by name, and URL.
