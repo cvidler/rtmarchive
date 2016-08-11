@@ -2,7 +2,7 @@
 
 // Config
 define("BASEDIR", "/var/spool/rtmarchive/");    // base directory of the archive data structure.
-
+$debug = 1;
 
 // Script below, do not edit.
 
@@ -81,12 +81,15 @@ if ( !file_exists(BASEDIR.$amd."/prevdir.lst")) {
 	continue; 
 }
 
+if ( debug ) { print $amd."</br>"; }
+
 // search amd list files
 $amdfound = false;
 $temp = "";
 $allmatches = "";
 foreach ($filelist as $file) {
 	$temp = file_get_contents(BASEDIR.$amd."/".$file);
+	if ( debug ) { print $amd."/".$file."|".$temp."|"."</br>"; }
 	if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $amdfound = true; }
 }
 if ( !$amdfound ) { continue; }
@@ -99,11 +102,15 @@ foreach ($years as $year) {
 		continue;
 	}
 
+	if ( debug ) { print $amd."/".$year."</br>"; }
+
+
 	// search year list files
 	$yearfound = false;
 	$temp = "";
 	foreach ($filelist as $file) {
 		$temp = file_get_contents(BASEDIR.$amd."/".$year."/".$file);
+		if ( debug ) { print $amd."/".$year."/".$file."|".$temp."|"."</br>"; }
 		if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $yearfound = true; }
 	}
 	if ( !$yearfound ) { continue; }
@@ -116,11 +123,14 @@ foreach ($years as $year) {
 			continue;
 		}
 
+		if ( debug ) { print $amd."/".$year."/".$month."</br>"; }
+
 		// search month list files
 		$monthfound = false;
 		$temp = "";
 		foreach ($filelist as $file) {
 			$temp = file_get_contents(BASEDIR.$amd."/".$year."/".$month."/".$file);
+			if ( debug ) { print $amd."/".$year."/".$month."/".$file."|".$temp."|"."</br>"; }
 			if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $monthfound = true; }
 		}
 		if ( !$monthfound ) { continue; }
@@ -133,11 +143,14 @@ foreach ($years as $year) {
 				continue;
 			}
 
+			if ( debug ) { print $amd."/".$year."/".$month."/".$day."</br>"; }
+
 			// search day list files
 			$dayfound = false;
 			$temp = ""; $daydata = "";
 			foreach ($filelist as $file) {
 				$temp = file_get_contents(BASEDIR.$amd."/".$year."/".$month."/".$day."/".$file);
+				if ( debug ) { print $amd."/".$year."/".$month."/".$day."/".$file."|".$temp."|"."</br>"; }
 				if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $dayfound = true; $daydata = $daydata.$temp;}
 			}
 
