@@ -71,6 +71,7 @@ function css_getclass(name,createifnotfound){
 // search archive directory lists
 $hits = "";
 $matches = "";
+$allmatches = "";
 $filelist = array('softwareservice.lst','serverips.lst','clientips.lst');
 $count = 0; $total = 0;
 $basedir = scandir(BASEDIR);
@@ -88,7 +89,6 @@ if ( $debug ) { print $amd."</br>"; }
 // search amd list files
 $amdfound = false;
 $temp = "";
-#l$allmatches = "";
 foreach ($filelist as $file) {
 	$temp = file_get_contents(BASEDIR.$amd."/".$file);
 	//if ( $debug ) { print $amd."/".$file."|".$temp."|"."</br>"; }
