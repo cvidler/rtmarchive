@@ -341,10 +341,19 @@ function getSymbolByQuantity($bytes) {
 	return sprintf('%.2f'.$symbols[$exp], ($bytes/pow(1024, floor($exp))));
 }
 
+class IgnorantRecursiveDirectoryIterator extends RecursiveDirectoryIterator {
+    function getChildren() {
+        try {
+            return new IgnorantRecursiveDirectoryIterator($this->getPathname());
+        } catch(UnexpectedValueException $e) {
+            return new RecursiveArrayIterator(array());
+        }
+    }
+} 
 
 function get_dir_size($directory) {
 	$size = 0;
-	foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($directory)) as $file) {
+	foreach (new RecursiveIteratorIterator(new IgnorantRecursiveDirectoryIterator($directory)) as $file) {
 		$size += $file->getSize();
 	}
 	return $size;
@@ -559,7 +568,7 @@ echo " - Free space: $free ";
 printf("%.1f", (disk_free_space($dir) / disk_total_space($dir)) * 100);
 echo "%";
 ?>
-<br/>Chris Vidler - Dynatrace DCRUM SME 2015
+<br/><a target="_new" href="https://github.com/cvidler/rtmarchive/">Chris Vidler - Dynatrace DCRUM SME 2015</a>
 </font></p>
 </td>
 </tr>
