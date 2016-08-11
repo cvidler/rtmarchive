@@ -2,7 +2,7 @@
 
 // Config
 define("BASEDIR", "/var/spool/rtmarchive/");    // base directory of the archive data structure.
-$debug = 1;
+$debug = 0;
 
 // Script below, do not edit.
 
@@ -75,6 +75,8 @@ $filelist = array('softwareservice.lst','serverips.lst','clientips.lst');
 $count = 0; $total = 0;
 $basedir = scandir(BASEDIR);
 $total = $total + count($basedir);
+
+
 foreach ($basedir as $amd) {
 $count++;
 if ( !file_exists(BASEDIR.$amd."/prevdir.lst")) { 
@@ -86,11 +88,11 @@ if ( $debug ) { print $amd."</br>"; }
 // search amd list files
 $amdfound = false;
 $temp = "";
-$allmatches = "";
+#l$allmatches = "";
 foreach ($filelist as $file) {
 	$temp = file_get_contents(BASEDIR.$amd."/".$file);
 	//if ( $debug ) { print $amd."/".$file."|".$temp."|"."</br>"; }
-	if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $amdfound = true; }
+	if ( (!$temp === false) and (stripos($temp, $searchtxt) !== false) ) { $amdfound = true; }
 }
 if ( !$amdfound ) { continue; }
 
@@ -111,7 +113,7 @@ foreach ($years as $year) {
 	foreach ($filelist as $file) {
 		$temp = file_get_contents(BASEDIR.$amd."/".$year."/".$file);
 		//if ( $debug ) { print $amd."/".$year."/".$file."|".$temp."|"."</br>"; }
-		if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $yearfound = true; }
+		if ( (!$temp === false) and (stripos($temp, $searchtxt) !== false) ) { $yearfound = true; }
 	}
 	if ( !$yearfound ) { continue; }
 							   
@@ -131,7 +133,7 @@ foreach ($years as $year) {
 		foreach ($filelist as $file) {
 			$temp = file_get_contents(BASEDIR.$amd."/".$year."/".$month."/".$file);
 			//if ( $debug ) { print $amd."/".$year."/".$month."/".$file."|".$temp."|"."</br>"; }
-			if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $monthfound = true; }
+			if ( (!$temp === false) and (stripos($temp, $searchtxt) !== false) ) { $monthfound = true; }
 		}
 		if ( !$monthfound ) { continue; }
 								 
@@ -151,7 +153,7 @@ foreach ($years as $year) {
 			foreach ($filelist as $file) {
 				$temp = file_get_contents(BASEDIR.$amd."/".$year."/".$month."/".$day."/".$file);
 				//if ( $debug ) { print $amd."/".$year."/".$month."/".$day."/".$file."|".$temp."|"."</br>"; }
-				if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $dayfound = true; $daydata = $daydata.$temp;}
+				if ( (!$temp === false) and (stripos($temp, $searchtxt) !== false) ) { $dayfound = true; $daydata = $daydata.$temp;}
 			}
 
 			//outputProgress($count, $total);
@@ -175,6 +177,8 @@ foreach ($years as $year) {
 			$matches = implode("|",$keys);
 			$allmatches = $allmatches."|".$matches;
 
+			if ( $debug ) { print "allmatches:".$allmatches."<br/>"; }
+
 			$ahits[$amd][$year."-".$month."-".$day] = $keys;
 			if ( $debug) { var_dump($ahits); }
 
@@ -184,8 +188,6 @@ foreach ($years as $year) {
 	}
 }
 }
-
-if ( $debug ) { print "allmatches:".$allmatches; }
 
 $temparr = array_unique(explode("|",ltrim(@$allmatches,"|")));
 asort($temparr);
