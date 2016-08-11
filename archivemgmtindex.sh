@@ -25,13 +25,17 @@ TOUCH=`which touch`
 
 # command line arguments
 OPTS=1
-while getopts ":dhb:" OPT; do
+FORCEINDEX=0
+while getopts ":dhfb:" OPT; do
 	case $OPT in
 		h)
 			OPTS=0  #show help
 			;;
 		d)
 			DEBUG=1
+			;;
+		f)
+			FORCEINDEX=1
 			;;
 		b)
 			BASEDIR=$OPTARG
@@ -48,8 +52,9 @@ while getopts ":dhb:" OPT; do
 done
 
 if [ $OPTS -eq 0 ]; then
-	echo -e "*** INFO: Usage: $0 [-h] [-b basearchivedir]"
+	echo -e "*** INFO: Usage: $0 [-h] [-f] [-b basearchivedir]"
 	echo -e "-h This help. Optional"
+	echo -e "-f Force a full re-index (potentially slow)."
 	echo -e "-b basearchivedir Archive directory path. Optional. Default: $BASEDIR"
 	exit 0
 fi
@@ -81,14 +86,14 @@ for AMD in "$BASEDIR"/*; do
 		# recurse year/month/day directory structure
 	    for YEAR in "$AMD"/*; do
 	        if [ ! -d "$YEAR" ]; then continue; fi
-			if [ ! $YEAR == $AMD"/"$tgtyear ]; then continue; fi
+			if [ ! $FORCEINDEX ] && [ ! $YEAR == $AMD"/"$tgtyear ]; then continue; fi
 	        for MONTH in "$YEAR"/*; do
 				if [ ! -d "$MONTH" ]; then continue; fi
-				if [ ! $MONTH == $YEAR"/"$tgtmonth ]; then continue; fi
+				if [ ! $FORCEINDEX ] && [ ! $MONTH == $YEAR"/"$tgtmonth ]; then continue; fi
 				for DAY in "$MONTH"/*;  do
 					if [ ! -d "$DAY" ]; then continue; fi
-					if [ ! $DAY == $MONTH"/"$tgtday ]; then continue; fi
-					#debugecho "***DEBUG: Processing directory $DAY"
+					if [ ! $FORCEINDEX ] && [ ! $DAY == $MONTH"/"$tgtday ]; then continue; fi
+					debugecho "***DEBUG: Processing directory $DAY"
 					# target year and month, process it
 
 					# concatenate yesterdays list files into months ones (create as needed)
