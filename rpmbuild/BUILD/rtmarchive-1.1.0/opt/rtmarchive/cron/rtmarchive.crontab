@@ -1,0 +1,5 @@
+0 0 * * * /usr/bin/bash /opt/rtmarchive/queryrumc.sh 1 0 >> /var/log/rtmarchive/queryrumc.log
+5 * * * * /usr/bin/bash /opt/rtmarchive/rtmarchive.sh >> /var/log/rtmarchive/rtmarchive.log
+CRON_TZ=UTC
+0 1 * * * /usr/bin/bash /opt/rtmarchive/archivemgmt.sh >> /var/log/rtmarchive/archivemgmt.log
+0 3 * * * /usr/bin/bash /opt/rtmarchive/archivemgmtindex.sh >> /var/log/rtmarchive/archiveindex.log

@@ -1,5 +1,0 @@
-0 0 * * * /usr/bin/bash /opt/rtmarchive/queryrumc.sh 1 0 >> /tmp/queryrumc.log
-5 * * * * /usr/bin/bash /opt/rtmarchive/rtmarchive.sh >> /tmp/rtmarchive.log
-CRON_TZ=UTC
-0 1 * * * /usr/bin/bash /opt/rtmarchive/archivemgmt.sh >> /tmp/archivemgmt.log
-0 3 * * * /usr/bin/bash /opt/rtmarchive/archivemgmtindex.sh >> /tmp/archiveindex.log
