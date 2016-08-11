@@ -81,7 +81,7 @@ if ( !file_exists(BASEDIR.$amd."/prevdir.lst")) {
 	continue; 
 }
 
-if ( debug ) { print $amd."</br>"; }
+if ( $debug ) { print $amd."</br>"; }
 
 // search amd list files
 $amdfound = false;
@@ -89,7 +89,7 @@ $temp = "";
 $allmatches = "";
 foreach ($filelist as $file) {
 	$temp = file_get_contents(BASEDIR.$amd."/".$file);
-	if ( debug ) { print $amd."/".$file."|".$temp."|"."</br>"; }
+	//if ( $debug ) { print $amd."/".$file."|".$temp."|"."</br>"; }
 	if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $amdfound = true; }
 }
 if ( !$amdfound ) { continue; }
@@ -102,7 +102,7 @@ foreach ($years as $year) {
 		continue;
 	}
 
-	if ( debug ) { print $amd."/".$year."</br>"; }
+	if ( $debug ) { print $amd."/".$year."</br>"; }
 
 
 	// search year list files
@@ -110,7 +110,7 @@ foreach ($years as $year) {
 	$temp = "";
 	foreach ($filelist as $file) {
 		$temp = file_get_contents(BASEDIR.$amd."/".$year."/".$file);
-		if ( debug ) { print $amd."/".$year."/".$file."|".$temp."|"."</br>"; }
+		//if ( $debug ) { print $amd."/".$year."/".$file."|".$temp."|"."</br>"; }
 		if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $yearfound = true; }
 	}
 	if ( !$yearfound ) { continue; }
@@ -123,14 +123,14 @@ foreach ($years as $year) {
 			continue;
 		}
 
-		if ( debug ) { print $amd."/".$year."/".$month."</br>"; }
+		if ( $debug ) { print $amd."/".$year."/".$month."</br>"; }
 
 		// search month list files
 		$monthfound = false;
 		$temp = "";
 		foreach ($filelist as $file) {
 			$temp = file_get_contents(BASEDIR.$amd."/".$year."/".$month."/".$file);
-			if ( debug ) { print $amd."/".$year."/".$month."/".$file."|".$temp."|"."</br>"; }
+			//if ( $debug ) { print $amd."/".$year."/".$month."/".$file."|".$temp."|"."</br>"; }
 			if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $monthfound = true; }
 		}
 		if ( !$monthfound ) { continue; }
@@ -143,19 +143,20 @@ foreach ($years as $year) {
 				continue;
 			}
 
-			if ( debug ) { print $amd."/".$year."/".$month."/".$day."</br>"; }
+			if ( $debug ) { print $amd."/".$year."/".$month."/".$day."</br>"; }
 
 			// search day list files
 			$dayfound = false;
 			$temp = ""; $daydata = "";
 			foreach ($filelist as $file) {
 				$temp = file_get_contents(BASEDIR.$amd."/".$year."/".$month."/".$day."/".$file);
-				if ( debug ) { print $amd."/".$year."/".$month."/".$day."/".$file."|".$temp."|"."</br>"; }
+				//if ( $debug ) { print $amd."/".$year."/".$month."/".$day."/".$file."|".$temp."|"."</br>"; }
 				if ( (!$temp === false) and (!stripos($temp, $searchtxt) === false) ) { $dayfound = true; $daydata = $daydata.$temp;}
 			}
 
 			//outputProgress($count, $total);
 
+			if ( $debug ) { print "<b>".$dayfound."</b>"; }
 			if ( !$dayfound ) { continue; }
 
 			// we've found the requested data in a day dataset, note it
@@ -175,7 +176,7 @@ foreach ($years as $year) {
 			$allmatches = $allmatches."|".$matches;
 
 			$ahits[$amd][$year."-".$month."-".$day] = $keys;
-			//echo var_dump($ahits);
+			if ( $debug) { var_dump($ahits); }
 
 
 		}
@@ -183,6 +184,8 @@ foreach ($years as $year) {
 	}
 }
 }
+
+if ( $debug ) { print "allmatches:".$allmatches; }
 
 $temparr = array_unique(explode("|",ltrim(@$allmatches,"|")));
 asort($temparr);
