@@ -95,3 +95,6 @@ Apache 2.4 compatible config file, suitable from RHEL7/CentOS7.
 - Opens firewall ports for web components
 - Enables/starts apache (httpd)
 
+### Download RPM Packages
+https://github.com/cvidler/rtmarchive/tree/master/rpmbuild/RPMS/x86_64
+
