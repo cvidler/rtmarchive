@@ -1,1 +1,0 @@
-/home/data_mine/rtmarchive/archivemgmt.sh
