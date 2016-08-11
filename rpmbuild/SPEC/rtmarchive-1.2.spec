@@ -20,7 +20,7 @@ Requires(postun): shadow-utils
 
 
 %pre
-/usr/bin/getent passwd %{name} || /usr/sbin/useradd -r -s /sbin/nologin %{name}
+/usr/bin/getent passwd %{name} || /usr/sbin/useradd -m -r -s /sbin/nologin %{name}
 
 %postun
 crontab -r -u %{name}
@@ -28,29 +28,23 @@ semodule -r rtmarchivepol
 firewall-cmd --permanent --remove-port 80/tcp
 firewall-cmd --permanent --remove-port 9090-9099/tcp
 firewall-cmd --reload
-apache-ctl graceful
+apachectl graceful
 /usr/sbin/userdel %{name}
 
 %post
-# firewall rules
 firewall-cmd --permanent --add-port 80/tcp
 firewall-cmd --permanent --add-port 9090-9099/tcp
 firewall-cmd --reload
 
-#create required folder structures and permissions
-#log folder
 mkdir -p /var/log/rtmarchive
 chown %{name}:%{name} /var/log/rtmarchive
 chmod 664 /var/log/rtmarchive
-#data folder
 mkdir -p /var/spool/rtmarchive
 chown %{name}:%{name} /var/spool/rtmarchive
 chmod 664 /var/spool/rtmarchive
-#vamd temp folder
 mkdir -p /var/spool/rtmarchive/.temp
 chown apache:apache /var/spool/rtmarchive/.temp
 chmod 755 /var/spool/rtmarchive/.temp
-#configs
 chown %{name}:%{name} /etc/amdlist.cfg
 chmod 664 /etc/amdlist.cfg
 chown %{name}:%{name} /etc/rumc.cfg
@@ -58,30 +52,25 @@ chmod 664 /etc/rumc.cfg
 chown %{name}:%{name} -R /var/www/rtmarchive/
 chown apache:apache /var/www/rtmarchive/activedatasets.conf
 chmod 664 /var/www/rtmarchive/activedatasets.conf
-#script folder
 chown %{name}:%{name} -R /opt/rtmarchive
 chmod 664 /opt/rtmarchive
-#apache config
 chown %{name}:%{name} /etc/httpd/conf.d/0_rtmarchive.conf
 chmod 664 /etc/httpd/conf.d/0_rtmarchive.conf
 
-#install crontab
 crontab -u %{name} /opt/rtmarchive/cron/rtmarchive.crontab
 
-#SELinux policy
-echo Compiling & Installing SELinux policy, may take a minute
+echo "Compiling & Installing SELinux policy, may take a minute"
 cd /opt/rtmarchive/sepol
 ./compilepolicy.sh
 
-#find system timezone, set php value using .htaccess method.
 tz=`/usr/bin/timedatectl | awk -F' ' '/Time zone:/ {print $3}'`
 echo -e '<IfModule !fcgid_module>\nphp_value date.timezone "'$tz'"\n</IfModule>' > /var/www/rtmarchive/.htaccess
 chown apache:apache /var/www/rtmarchive/.htaccess
 
-#enable and start apache
 systemctl enable httpd.service
 systemctl start httpd.service
 
+apachectl graceful
 
 
 %description
@@ -118,6 +107,10 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Thu Aug 11 2016  Chris Vidler <christopher.vidler@dynatrace.com> 1.2.0-1
+- Numerous bug fixes, additional debgging, and exception handling.
+- Proper support for the ever changing RUM Console formats.
+- More robust installation scripting.
 * Mon Jun 06 2016  Chris Vidler <christopher.vidler@dynatrace.com> 1.1.0-2
 - Improved logging, modified crontab and logrotate to suit.
 * Thu Jun 02 2016  Chris Vidler <christopher.vidler@dynatrace.com> 1.1.0-1
