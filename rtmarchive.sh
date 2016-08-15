@@ -50,7 +50,6 @@ done
 if [ $OPTS -eq 0 ]; then
 	echo -e "*** INFO: Usage: $0 [-h] [-a amdlist] [-b basearchivedir]"
 	echo -e "-h This help"
-	echo -e "-u Update AMD list"
 	echo -e "-a Full path to amdlist file, default $AMDLIST"
 	echo -e "-b Full path to basearchivedir, default $BASEDIR"
 	exit 0
@@ -92,6 +91,8 @@ $AWK -F"," '$1=="A" { print $3","$2 } ' $AMDLIST | ( while read p q; do
 	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
 	echo -e "Launching amdarchive script for: ${p}"
 	if [ $DEBUG -ne 0 ]; then DODEBUG=-d; fi
+	RUNCMD="$SCRIPTDIR/archiveamd.sh -n \"${p}\" -u \"${q}\" -b \"$BASEDIR\" $DODEBUG &"
+	if [ $DEBUG -ne 0 ]; then echo "RUNCMD: $RUNCMD"; fi
 	$SCRIPTDIR/archiveamd.sh -n "${p}" -u "${q}" -b "$BASEDIR" $DODEBUG &
 done; wait
 )
