@@ -148,7 +148,7 @@ fi
 
 # check for existing current data file list (there shouldn't be one if the script works, remove it)
 if [ -f "$AMDDIR/currdir.lst" ]; then
-	debugecho "Found stale currdidr.lst. Removing it."
+	debugecho "Found stale currdir.lst. Removing it."
 	rm -f "$AMDDIR/currdir.lst"
 fi
 
@@ -203,28 +203,42 @@ debugecho "filecount: [$diffcount]", 2
 debugecho "filelist: [$difflist]", 3
 while read p; do
 
+	count=$((count+1))
+	if ! (( count % $DISPCOUNT )) ; then 		#status update every DISPCOUNT files
+		# figure out percentage
+		PERC=0$(bc -l <<<  "(($count/$diffcount) * 100); " ); PERC=${PERC%.*}; PERC=${PERC#0}; if [ "$PERC" == "" ]; then PERC=0; fi
+		# figure out progress bar length
+		BARL=0$(bc -l <<<  "(((($count/$diffcount) * $DISPCOLS)) / $DISPCOLS) * $DISPCOLS; "); BARL=${BARL%.*}; BARL=${BARL#0}; if [ "$BARL" == "" ]; then BARL=0; fi
+		# figure out progress bar blank length
+		BARR=$((DISPCOLS - BARL)); if [[ $BARR -lt 1 ]]; then BARR=0; fi
+		debugecho "count: [$count], diffcount: [$diffcount], PERC: [$PERC], BARL: [$BARL], BARR: [$BARR], COLUMNS: [$DISPCOLS]", 2
+		echo -e "Processed files from AMD: $AMDNAME $count/$diffcount $PERC%" 
+		echo -e "[`$HEAD -c $BARL < /dev/zero | $TR '\0' '#' ``$HEAD -c $BARR < /dev/zero | $TR '\0' ' '`] $PERC%"
+	fi
+
 	# Validate file name is something we want.
 	if [ "`echo "${p}" | $AWK ' /[a-z0-9]+_[0-9a-f]+_[150a]+_[tb].*/ '`" == "${p}" ]; then
-	 	# Extract date codes from file name	
+	 	# Extract date codes from file name	- OPTIMISE THIS
 		year=`echo "${p}" | $AWK -F"_" ' { print strftime("%Y",strtonum("0x"$2),1); } '`
 		month=`echo "${p}" | $AWK -F"_" ' { print strftime("%m",strtonum("0x"$2),1); } '`
 		day=`echo "${p}" | $AWK -F"_" ' { print strftime("%d",strtonum("0x"$2),1); } '`
 		#debugecho "${file},$year,$month,$day"
 		# Check for correct folder structure - create if needed
-		ARCDIR=$AMDDIR/$year/$month/$day/
+		ARCDIR="$AMDDIR/$year/$month/$day/"
 		if [ ! -w "$ARCDIR" ]; then
 			debugecho "Creating archive directory: $ARCDIR"
 			mkdir -p "$ARCDIR"
 		fi
 		file="$ARCDIR/${p}"
 
-		filelist=${p}
+		filelist="${p}"
 		debugecho "filelist: $filelist", 3
 
-		for f in $filelist; do
-			file=$ARCDIR/${f}
+		#for f in $filelist; do
+		f="$filelist"
+			file="$ARCDIR/${f}"
 
-			if [ -r "$file" ]; then continue; fi	# already exists skip downloading
+			if [ -r "$file" ]; then debugecho "Skipping exiting file ${f}", 2; continue; fi	# already exists skip downloading
 
 			debugecho "Downloading ${f} from $AMDNAME to $file"
 			# Try download 3 times
@@ -280,22 +294,11 @@ while read p; do
 					fi
 				fi
 			fi
-		done
+		#done
 	else
 		debugecho "\e[33m*** WARNING:\e[39m Unknown file: ${p} on AMD: $AMDNAME" >&2
 	fi
-	count=$((count+1))
-	if ! (( count % $DISPCOUNT )) ; then 		#status update every DISPCOUNT files
-		# figure out percentage
-		PERC=0$(bc -l <<<  "(($count/$diffcount) * 100); " ); PERC=${PERC%.*}; PERC=${PERC#0}; if [ "$PERC" == "" ]; then PERC=0; fi
-		# figure out progress bar length
-		BARL=0$(bc -l <<<  "(((($count/$diffcount) * $DISPCOLS)) / $DISPCOLS) * $DISPCOLS; "); BARL=${BARL%.*}; BARL=${BARL#0}; if [ "$BARL" == "" ]; then BARL=0; fi
-		# figure out progress bar blank length
-		BARR=$((DISPCOLS - BARL)); if [[ $BARR -lt 1 ]]; then BARR=0; fi
-		debugecho "count: [$count], diffcount: [$diffcount], PERC: [$PERC], BARL: [$BARL], BARR: [$BARR], COLUMNS: [$DISPCOLS]", 2
-		echo -e "Processed files from AMD: $AMDNAME $count/$diffcount $PERC%" 
-		echo -e "[`$HEAD -c $BARL < /dev/zero | $TR '\0' '#' ``$HEAD -c $BARR < /dev/zero | $TR '\0' ' '`] $PERC%"
-	fi
+
 done < <(echo -e "$difflist")
 
 
