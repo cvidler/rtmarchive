@@ -30,8 +30,10 @@ TAIL=`which tail`
 HEAD=`which head`
 DATE=`which date`
 TR=`which tr`
+set +e
 BC=`which bc`
-if [ $? -eq 0 ]; then BC=""; fi  #bc is optional, don't display percentages/progress bar if absent
+if [ $? -ne 0 ]; then BC=""; fi  #bc is optional, don't display percentages/progress bar if absent
+set -e
 
 
 #DISPCOLS used to draw progress bars, resize to acount for screenwidth and extras
@@ -207,15 +209,15 @@ difflist=`$AWK 'NR==FNR{a[$1]++;next;}!($0 in a)' "$AMDDIR/prevdir.lst" "$AMDDIR
 diffcount=`echo -e "$difflist" | wc -l`
 debugecho "filecount: [$diffcount]", 2
 debugecho "filelist: [$difflist]", 3
-while read p; do
+while read -r p; do
 
 	count=$((count+1))
 	if ! (( count % $DISPCOUNT )) ; then 		#status update every DISPCOUNT files
 		if [ ! "$BC" == "" ]; then		
 			# figure out percentage
-			PERC=0$(bc -l <<<  "(($count/$diffcount) * 100); " ); PERC=${PERC%.*}; PERC=${PERC#0}; if [ "$PERC" == "" ]; then PERC=0; fi
+			PERC=0$($BC -l <<<  "(($count/$diffcount) * 100); " ); PERC=${PERC%.*}; PERC=${PERC#0}; if [ "$PERC" == "" ]; then PERC=0; fi
 			# figure out progress bar length
-			BARL=0$(bc -l <<<  "(((($count/$diffcount) * $DISPCOLS)) / $DISPCOLS) * $DISPCOLS; "); BARL=${BARL%.*}; BARL=${BARL#0}; if [ "$BARL" == "" ]; then BARL=0; fi
+			BARL=0$($BC -l <<<  "(((($count/$diffcount) * $DISPCOLS)) / $DISPCOLS) * $DISPCOLS; "); BARL=${BARL%.*}; BARL=${BARL#0}; if [ "$BARL" == "" ]; then BARL=0; fi
 			# figure out progress bar blank length
 			BARR=$((DISPCOLS - BARL)); if [[ $BARR -lt 1 ]]; then BARR=0; fi
 			echo -e "Processed files from AMD: $AMDNAME $count/$diffcount $PERC%" 
