@@ -30,6 +30,8 @@ TAIL=`which tail`
 HEAD=`which head`
 DATE=`which date`
 TR=`which tr`
+BC=`which bc`
+if [ $? -eq 0 ]; then BC=""; fi  #bc is optional, don't display percentages/progress bar if absent
 
 
 #DISPCOLS used to draw progress bars, resize to acount for screenwidth and extras
@@ -114,7 +116,8 @@ AMDDIR=$BASEDIR/$AMDNAME
 
 #check passed parameters
 
-debugecho "Passed Parameters [$AMDNAME], [$URL], [$BASEDIR], [$DEBUG]", 2
+debugecho "Passed Parameters: AMDNAME: [$AMDNAME], URL: [$URL], BASEDIR: [$BASEDIR], DEBUG: [$DEBUG]", 2
+debugecho "Constructed Parameters: AMDDIR [$AMDDIR]", 2
 
 if [ -z "$AMDNAME" ]; then
 	echo -e "\e[31m***FATAL:\e[0m AMDNAME parameter not supplied. Aborting." >&2
@@ -192,6 +195,9 @@ if [ $fail -ne 0 ]; then echo -e "\e[31m***FATAL:\e[0m Could not download versio
 debugecho "HS AMD detected: $HSAMD"
 
 
+BARL=0
+BARR=0
+PERC=0
 downloaded=0
 warnings=0
 count=0
@@ -205,23 +211,31 @@ while read p; do
 
 	count=$((count+1))
 	if ! (( count % $DISPCOUNT )) ; then 		#status update every DISPCOUNT files
-		# figure out percentage
-		PERC=0$(bc -l <<<  "(($count/$diffcount) * 100); " ); PERC=${PERC%.*}; PERC=${PERC#0}; if [ "$PERC" == "" ]; then PERC=0; fi
-		# figure out progress bar length
-		BARL=0$(bc -l <<<  "(((($count/$diffcount) * $DISPCOLS)) / $DISPCOLS) * $DISPCOLS; "); BARL=${BARL%.*}; BARL=${BARL#0}; if [ "$BARL" == "" ]; then BARL=0; fi
-		# figure out progress bar blank length
-		BARR=$((DISPCOLS - BARL)); if [[ $BARR -lt 1 ]]; then BARR=0; fi
+		if [ ! "$BC" == "" ]; then		
+			# figure out percentage
+			PERC=0$(bc -l <<<  "(($count/$diffcount) * 100); " ); PERC=${PERC%.*}; PERC=${PERC#0}; if [ "$PERC" == "" ]; then PERC=0; fi
+			# figure out progress bar length
+			BARL=0$(bc -l <<<  "(((($count/$diffcount) * $DISPCOLS)) / $DISPCOLS) * $DISPCOLS; "); BARL=${BARL%.*}; BARL=${BARL#0}; if [ "$BARL" == "" ]; then BARL=0; fi
+			# figure out progress bar blank length
+			BARR=$((DISPCOLS - BARL)); if [[ $BARR -lt 1 ]]; then BARR=0; fi
+			echo -e "Processed files from AMD: $AMDNAME $count/$diffcount $PERC%" 
+			echo -e "[`$HEAD -c $BARL < /dev/zero | $TR '\0' '#' ``$HEAD -c $BARR < /dev/zero | $TR '\0' ' '`] $PERC%"
+		else
+			echo -e "Processed files from AMD: $AMDNAME $count/$diffcount" 
+		fi
 		debugecho "count: [$count], diffcount: [$diffcount], PERC: [$PERC], BARL: [$BARL], BARR: [$BARR], COLUMNS: [$DISPCOLS]", 2
-		echo -e "Processed files from AMD: $AMDNAME $count/$diffcount $PERC%" 
-		echo -e "[`$HEAD -c $BARL < /dev/zero | $TR '\0' '#' ``$HEAD -c $BARR < /dev/zero | $TR '\0' ' '`] $PERC%"
 	fi
 
 	# Validate file name is something we want.
 	if [ "`echo "${p}" | $AWK ' /[a-z0-9]+_[0-9a-f]+_[150a]+_[tb].*/ '`" == "${p}" ]; then
 	 	# Extract date codes from file name	- OPTIMISE THIS
-		year=`echo "${p}" | $AWK -F"_" ' { print strftime("%Y",strtonum("0x"$2),1); } '`
-		month=`echo "${p}" | $AWK -F"_" ' { print strftime("%m",strtonum("0x"$2),1); } '`
-		day=`echo "${p}" | $AWK -F"_" ' { print strftime("%d",strtonum("0x"$2),1); } '`
+		#year=`echo "${p}" | $AWK -F"_" ' { print strftime("%Y",strtonum("0x"$2),1); } '`
+		#month=`echo "${p}" | $AWK -F"_" ' { print strftime("%m",strtonum("0x"$2),1); } '`
+		#day=`echo "${p}" | $AWK -F"_" ' { print strftime("%d",strtonum("0x"$2),1); } '`
+		ts=`echo "${p}" | $AWK -F"_" ' { print "0x"$2; } '`
+		year=`TZ=UTC; printf "%(%Y)T" $ts`
+		month=`TZ=UTC; printf "%(%m)T" $ts`
+		day=`TZ=UTC; printf "%(%d)T" $ts`
 		#debugecho "${file},$year,$month,$day"
 		# Check for correct folder structure - create if needed
 		ARCDIR="$AMDDIR/$year/$month/$day/"
@@ -240,7 +254,7 @@ while read p; do
 
 			if [ -r "$file" ]; then debugecho "Skipping exiting file ${f}", 2; continue; fi	# already exists skip downloading
 
-			debugecho "Downloading ${f} from $AMDNAME to $file"
+			debugecho "Downloading [${f}] from [$AMDNAME] to [$file]"
 			# Try download 3 times
 			warn=0
 			tmpfile=`$MKTEMP`

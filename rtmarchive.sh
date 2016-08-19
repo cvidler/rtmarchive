@@ -8,6 +8,7 @@
 AMDLIST=/etc/amdlist.cfg
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=/opt/rtmarchive
+PIDFILE=/tmp/rtmarchive.pid
 MAXTHREADS=4
 DEBUG=0
 
@@ -19,6 +20,8 @@ IFS=$',\n\t'
 AWK=`which awk`
 JOBS=`which jobs`
 WC=`which wc`
+HEAD=`which head`
+TR=`which tr`
 
 #command line parameters
 OPTS=1
@@ -28,7 +31,7 @@ while getopts ":hda:b:" OPT; do
 			OPTS=0  #show help
 			;;
 		d)
-			DEBUG=1
+			DEBUG=$((DEBUG + 1))
 			;;
 		a)
 			AMDLIST=$OPTARG
@@ -77,6 +80,14 @@ then
 fi
 
 
+if [ ! -r $PIDFILE ]; then
+	echo -e "$$" > $PIDFILE
+else
+	echo -e "rtmarchive script already running pid: `cat $PIDFILE`"
+	exit 1
+fi
+
+
 # Lets start things
 echo rtmarchive script
 echo 
@@ -90,12 +101,14 @@ DODEBUG=""
 $AWK -F"," '$1=="A" { print $3","$2 } ' $AMDLIST | ( while read p q; do 
 	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
 	echo -e "Launching amdarchive script for: ${p}"
-	if [ $DEBUG -ne 0 ]; then DODEBUG=-d; fi
+	if [ $DEBUG -ne 0 ]; then DODEBUG=-`$HEAD -c $DEBUG < /dev/zero | $TR '\0' 'd' `; fi
 	RUNCMD="$SCRIPTDIR/archiveamd.sh -n \"${p}\" -u \"${q}\" -b \"$BASEDIR\" $DODEBUG &"
 	if [ $DEBUG -ne 0 ]; then echo "RUNCMD: $RUNCMD"; fi
 	$SCRIPTDIR/archiveamd.sh -n "${p}" -u "${q}" -b "$BASEDIR" $DODEBUG &
 done; wait
 )
+
+rm -f $PIDFILE
 
 echo
 echo rtmarchive script complete
