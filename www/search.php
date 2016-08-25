@@ -65,7 +65,14 @@ function css_getclass(name,createifnotfound){
 </head>
 <body onload="javascript:css_getclass('.progress').style.display='none';">
 <h1>rtmarchive Search Results</h1>
-<p>Search Query: <?php echo $searchtxt; ?></p>
+<table width="100%">
+<tr>
+<td></td>
+<td colspan="1" align="right"><form action="search.php">Search IP/Software Service: <input type="text" name="searchtxt" size="40" value="<?php echo $searchtxt; ?>"/><input type="submit" value="Search"/></form></td>
+</tr>
+<tr><td colspan="2">
+<b>Search results for query: </b>"<?php echo $searchtxt; ?>" - <a href="/">Clear Search Results</a>
+</td></tr>
 <?php
 
 // search archive directory lists
@@ -84,7 +91,7 @@ if ( !file_exists(BASEDIR.$amd."/prevdir.lst")) {
 	continue; 
 }
 
-if ( $debug ) { print $amd."</br>"; }
+//if ( $debug ) { print $amd."</br>"; }
 
 // search amd list files
 $amdfound = false;
@@ -104,7 +111,7 @@ foreach ($years as $year) {
 		continue;
 	}
 
-	if ( $debug ) { print $amd."/".$year."</br>"; }
+	//if ( $debug ) { print $amd."/".$year."</br>"; }
 
 
 	// search year list files
@@ -125,7 +132,7 @@ foreach ($years as $year) {
 			continue;
 		}
 
-		if ( $debug ) { print $amd."/".$year."/".$month."</br>"; }
+		//if ( $debug ) { print $amd."/".$year."/".$month."</br>"; }
 
 		// search month list files
 		$monthfound = false;
@@ -145,7 +152,7 @@ foreach ($years as $year) {
 				continue;
 			}
 
-			if ( $debug ) { print $amd."/".$year."/".$month."/".$day."</br>"; }
+			//if ( $debug ) { print $amd."/".$year."/".$month."/".$day."</br>"; }
 
 			// search day list files
 			$dayfound = false;
@@ -158,7 +165,7 @@ foreach ($years as $year) {
 
 			//outputProgress($count, $total);
 
-			if ( $debug ) { print "<b>".$dayfound."</b>"; }
+			//if ( $debug ) { print "<b>".$dayfound."</b>"; }
 			if ( !$dayfound ) { continue; }
 
 			// we've found the requested data in a day dataset, note it
@@ -177,10 +184,10 @@ foreach ($years as $year) {
 			$matches = implode("|",$keys);
 			$allmatches = $allmatches."|".$matches;
 
-			if ( $debug ) { print "allmatches:".$allmatches."<br/>"; }
+			//if ( $debug ) { print "allmatches:".$allmatches."<br/>"; }
 
 			$ahits[$amd][$year."-".$month."-".$day] = $keys;
-			if ( $debug) { var_dump($ahits); }
+			//if ( $debug) { var_dump($ahits); }
 
 
 		}
@@ -201,6 +208,7 @@ if ( $allmatches == "" ) { $temparr[0] ="Nothing found."; }
 //echo $matches."\n";
 
 ?>
+<tr><td valign="top">
 <h3>Hits</h3>
 
 <?php
@@ -210,7 +218,8 @@ foreach ($temparr as $match) {
 }
 echo "</ul>\n";
 ?>
-
+</td>
+<td valign="top">
 <h3>Data Sets</h3>
 
 <?php
@@ -233,7 +242,9 @@ echo "</ul>\n";
 
 
 ?>
-
+</td>
+</tr>
+</table>
 
 
 </body>

@@ -384,13 +384,13 @@ function get_dir_size($directory) {
 <?php
 $basedir = scandir(BASEDIR);
 foreach ($basedir as $amd) {
-	if (file_exists(BASEDIR.$amd."/prevdir.lst")) {
+	if (file_exists(BASEDIR.$amd."/uuid.lst")) {
 		echo " <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd.$datasetsurl)."\">";
 		if ( !($linkopts['amd'] === $amd) ) { echo $amd."</a></li>\n"; continue; }
 		echo "<b>".$amd."</b></a>\n";
 		$years = scandir(BASEDIR.$amd);
 		foreach ($years as $year) {
-			if ( !is_numeric($year) ) { 
+			if ( !is_numeric($year) || !file_exists(BASEDIR.$amd."/".$year."/softwareservice.lst") ) { 
 				continue; 
 			}
 			echo "  <ul>\n";
@@ -400,7 +400,7 @@ foreach ($basedir as $amd) {
 			echo "    <ul>\n";
 			$months = scandir(BASEDIR.$amd."/".$year);
 			foreach ($months as $month) {
-				if ( !is_numeric($month) ) { 
+				if ( !is_numeric($month) || !file_exists(BASEDIR.$amd."/".$year."/".$month."/softwareservice.lst") ) { 
 					continue;
 				}
 				echo "     <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month.$datasetsurl)."\">";
