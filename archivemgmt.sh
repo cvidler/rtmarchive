@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # rtmarchive management script
 # Chris Vidler Dynatrace DCRUM SME
 #
@@ -35,7 +35,7 @@ while getopts ":dhb:" OPT; do
 			OPTS=0  #show help
 			;;
 		d)
-			DEBUG=1
+			DEBUG=$((DEBUG + 1))
 			;;
 		b)
 			BASEDIR=$OPTARG
@@ -61,7 +61,8 @@ fi
 
 
 function debugecho {
-        if [ $DEBUG -ne 0 ]; then echo -e "$@"; fi
+	dbglevel=${2:-1}
+	if [ $DEBUG -ge $dbglevel ]; then echo -e "*** DEBUG[$dbglevel]: $1"; fi
 }
 
 echo -e "rtmarchive Archive Management Script"
@@ -99,7 +100,7 @@ for DIR in "$BASEDIR"/*; do
 				debugecho "***DEBUG: archivedelay=$archivedelay" 
 				if [ $ZCOUNT -ne 0 ]; then if [ $archivedelay -gt 86400 ]; then
 					for ZDATA in $DAY/zdata_*; do
-						debugecho "***DEBUG: Processing: $ZDATA"
+						debugecho "***DEBUG: Processing: $ZDATA", 2
 						# Grab timestamp from zdata contents (doesn't work on HS AMD zdata, so disabling)
 						#$AWK -F" " '$1=="#TS:" { print $2", "strftime("%c",strtonum("0x"$2),1); }' "$ZDATA" >> "$DAY"/timestamps.lst.tmp
 						# Grab timestamp from file name						
@@ -119,6 +120,7 @@ for DIR in "$BASEDIR"/*; do
 					if [ $updated -ne 0 ]; then
 						# de-dupe and sort list files
 						for file in timestamps.lst softwareservice.lst serverips.lst clientips.lst serverports.lst versions.lst; do
+							chmod +w "$DAY"/$file
 							$AWK '{ !a[$0]++ } END { n=asorti(a,c) } END { for (i = 1; i <= n; i++) { print c[i] } }' "$DAY"/$file.tmp > "$DAY"/$file
 							chmod -w "$DAY"/$file
 							rm "$DAY"/$file.tmp
@@ -127,6 +129,10 @@ for DIR in "$BASEDIR"/*; do
 
 					# archive it all
 					ARCNAME=$AMDNAME-$DATADATE.tar.bz2
+					if [ ! -w $ARCNAME ]; then
+						echo -e "\e[33m***WARNING:\e[0m Archive [$ARCNAME] already exists or can't write, skipping."
+						continue
+					fi
 					$TAR -cjf "$MONTH"/$ARCNAME -C "$DAY" . >&2
 					if [ $? -eq 0 ]; then
 						#succesful, checksum the archive and clean up data files

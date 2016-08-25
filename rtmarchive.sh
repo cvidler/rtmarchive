@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # rtmarchive Main Script
 # Chris Vidler - Dynatrace DCRUM SME 2015
 #

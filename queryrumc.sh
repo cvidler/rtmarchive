@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # queryrcon Script
 # Chris Vidler - Dynatrace DCRUM SME 2015
 #

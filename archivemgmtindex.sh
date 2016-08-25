@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # rtmarchive management search indexer script
 # Chris Vidler Dynatrace DCRUM SME
 #

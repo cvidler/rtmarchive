@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # archiveamd script
 # Chris Vidler Dynatrace DCRUM SME
 #
