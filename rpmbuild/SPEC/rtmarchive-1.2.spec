@@ -14,7 +14,7 @@ SOURCE0 : %{name}-%{version}.tar.gz
 URL: https://github.com/cvidler/rtmarchive
 BuildArch: x86_64
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Requires: httpd >= 2.4,php >= 5.4,bash >= 4.2,tar,bzip2,gawk,wget,gzip,coreutils,cronie,checkpolicy,policycoreutils,policycoreutils-python
+Requires: httpd >= 2.4,php >= 5.4,bash >= 4.2,curl,tar,bzip2,gawk,wget,gzip,coreutils,cronie,checkpolicy,policycoreutils,policycoreutils-python
 Requires(pre): shadow-utils,glibc-common
 Requires(postun): shadow-utils
 

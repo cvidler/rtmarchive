@@ -5,6 +5,7 @@ Long term archiving system from rtm data files produced by Dynatrace DCRUM
 - httpd >= 2.4
 - php >= 5.4
 - bash >= 4.2
+- curl
 - tar
 - bzip2
 - gawk
