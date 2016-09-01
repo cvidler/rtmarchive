@@ -26,6 +26,7 @@ DATE=`which date`
 SHA512SUM=`which sha512sum`
 JOBS=`which jobs`
 WC=`which wc`
+AMDNAME=""
 
 # command line arguments
 OPTS=1
@@ -42,11 +43,11 @@ while getopts ":dhb:" OPT; do
 			;;
 		\?)
 			OPTS=0 #show help
-			echo "*** FATAL: Invalid argument -$OPTARG."
+			techo "*** FATAL: Invalid argument -$OPTARG."
 			;;
 		:)
 			OPTS=0 #show help
-			echo "*** FATAL: argument -$OPTARG requires parameter."
+			techo "*** FATAL: argument -$OPTARG requires parameter."
 			;;
 	esac
 done
@@ -62,11 +63,17 @@ fi
 
 function debugecho {
 	dbglevel=${2:-1}
-	if [ $DEBUG -ge $dbglevel ]; then echo -e "*** DEBUG[$dbglevel]: $1"; fi
+	if [ $DEBUG -ge $dbglevel ]; then techo "*** DEBUG[$dbglevel]: $1"; fi
 }
 
-echo -e "rtmarchive Archive Management Script"
-echo -e "Starting"
+function techo {
+	echo -e "[`date -u`][$AMDNAME]: $1" 
+}
+
+tstart=`date -u +%s`
+techo "rtmarchive Archive Management Script"
+techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
+techo "Starting"
 
 #list contents of BASEDIR for 
 for DIR in "$BASEDIR"/*; do
@@ -75,7 +82,7 @@ for DIR in "$BASEDIR"/*; do
 	# only interested if it has got AMD data in it
 	if [ ! -r "$DIR/prevdir.lst" ]; then continue; fi
 	AMDNAME=`echo $DIR | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `
-	echo -e "Processing AMD: $AMDNAME"
+	techo "Processing AMD: $AMDNAME"
 	
 	# recurse year/month/day directory structure
 	for YEAR in "$DIR"/*; do
@@ -84,9 +91,9 @@ for DIR in "$BASEDIR"/*; do
 			if [ ! -d "$MONTH" ]; then continue; fi
 			for DAY in "$MONTH"/*;  do
 				if [ ! -d "$DAY" ]; then continue; fi
-				debugecho "***DEBUG: Processing directory $DAY"
+				debugecho "Processing directory DAY: [$DAY]" 2
 				DATADATE=`echo $YEAR | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `-`echo $MONTH | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `-`echo $DAY | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `
-				debugecho "***DEBUG: Processing date: $DATADATE"
+				debugecho "Processing date: DATADATE: [$DATADATE]" 2
 
 				# process zdata files if found (if not probably archived already)
 				set +e
@@ -97,30 +104,88 @@ for DIR in "$BASEDIR"/*; do
 				nowtime=$($DATE -u +"%s")
 				datatime=$($DATE -u -d "$DATADATE" +"%s")
 				archivedelay=$(($nowtime-$datatime))
-				debugecho "***DEBUG: archivedelay=$archivedelay" 
+				debugecho "archivedelay: [$archivedelay] seconds" 2
 				if [ $ZCOUNT -ne 0 ]; then if [ $archivedelay -gt 86400 ]; then
-					for ZDATA in $DAY/zdata_*; do
-						debugecho "***DEBUG: Processing: $ZDATA", 2
-						# Grab timestamp from zdata contents (doesn't work on HS AMD zdata, so disabling)
-						#$AWK -F" " '$1=="#TS:" { print $2", "strftime("%c",strtonum("0x"$2),1); }' "$ZDATA" >> "$DAY"/timestamps.lst.tmp
-						# Grab timestamp from file name						
-						`echo $ZDATA | $AWK -F"_" ' { print strftime("%F %T",strtonum("0x"$2),1); }' >> "$DAY"/timestamps.lst.tmp`
-						# grab version from non HS AMD zdata						
-						$AWK -F" " '$1=="V" { printf("%s.%s.%s.%s", $2,$3,$4,$5) }' "$ZDATA" >> "$DAY"/versions.lst.tmp
-						# grab version from HS AMD zdata
-						$AWK -F" " '$1=="#Producer:" { sub("ndw.","" , $2); print $2 }' "$ZDATA" >> "$DAY"/versions.lst.tmp 
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' "$ZDATA" | 
+
+					# check for existing archive, skip if found - don't want to overwrite archived data.
+					ARCNAME=$AMDNAME-$DATADATE.tar.bz2
+					if [ ! -w $ARCNAME ] && [ -f $ARCNAME ]; then
+						techo "\e[33m***WARNING:\e[0m Archive [$ARCNAME] already exists or can't write, skipping."
+						continue
+					fi
+
+#					for ZDATA in $DAY/zdata_*; do
+#						debugecho "Processing: ZDATA: [$ZDATA]" 2
+#						# Grab timestamp from zdata contents (doesn't work on HS AMD zdata, so disabling)
+#						#$AWK -F" " '$1=="#TS:" { print $2", "strftime("%c",strtonum("0x"$2),1); }' "$ZDATA" >> "$DAY"/timestamps.lst.tmp
+#						# Grab timestamp from file name						
+#						`echo "$ZDATA" | $AWK -F"_" ' { print strftime("%F %T",strtonum("0x"$2),1); }' >> "$DAY"/timestamps.lst.tmp`
+#						# grab version from non HS AMD zdata						
+#						$AWK -F" " '$1=="V" { printf("%s.%s.%s.%s", $2,$3,$4,$5) }' "$ZDATA" >> "$DAY"/versions.lst.tmp
+#						# grab version from HS AMD zdata
+#						$AWK -F" " '$1=="#Producer:" { sub("ndw.","" , $2); print $2 }' "$ZDATA" >> "$DAY"/versions.lst.tmp 
+#						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' "$ZDATA" | 
+#							$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
+#						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/serverips.lst.tmp
+#						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/clientips.lst.tmp
+#						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/serverports.lst.tmp
+#						updated=1
+#					done
+						
+					debugecho "Processing: ZDATA: [$DAY/zdata_*]"
+					ESCDIR=$(printf '%q' "$DAY")
+					debugecho "ESCDIR: [$ESCDIR]" 2		
+
+					#test available file types
+					set +e
+					ZDATA=`ls -1 "$DAY"/zdata_*_t | wc -l`
+					VOLDATA=`ls -1 "$DAY"/zdata_*_t_vol | wc -l`
+					IPDATA=`ls -1 "$DAY"/zdata_*_t_ip | wc -l`
+					NDATA=`ls -1 "$DAY"/ndata_*_t_rtm | wc -l`
+					set -e
+					debugecho "ZDATA: [$ZDATA], VOLDATA: [$VOLDATA], IPDATA: [$IPDATA], NDATA: [$NDATA]" 1
+					FILEEXT=""				
+					if [ $ZDATA -ne 0 ]; then FILEEXT="${FILEEXT}\"${ESCDIR}\"/zdata_*_t "; fi
+					if [ $VOLDATA -ne 0 ]; then FILEEXT="${FILEEXT}\"${ESCDIR}\"/zdata_*_t_vol "; fi
+					if [ $IPDATA -ne 0 ]; then FILEEXT="${FILEEXT}\"${ESCDIR}\"/zdata_*_t_ip "; fi
+					debugecho "FILEEXT: [$FILEEXT]" 1
+
+					# grab version from non HS AMD zdata						
+					if [ $ZDATA -ne 0 ]; then $AWK -F" " '$1=="V" { printf("%s.%s.%s.%s", $2,$3,$4,$5) }' "$DAY"/zdata_*_t >> "$DAY"/versions.lst.tmp; fi
+					# grab version from HS AMD zdata
+					if [ $VOLDATA -ne 0 ]; then $AWK -F" " '$1=="#Producer:" { sub("ndw.","" , $2); print $2 }' "$DAY"/zdata_*_t_vol >> "$DAY"/versions.lst.tmp; fi
+
+					#grab server/client/port details from zdata 'U' and 'h' records
+					set -x
+					$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' $FILEEXT | 
+						$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
+					$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/serverips.lst.tmp
+					$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/clientips.lst.tmp
+					$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/serverports.lst.tmp
+					set +x
+
+					#grab server/client/port details from ndata
+					if [ $NDATA -ne 0 ]; then
+						#ndata 'C' record is a little different, handle appropriately
+						FILEEXT="$DAY/ndata_*_t_rtm"
+						$AWK -F" " '$1 ~/^[C]/ { a[$5]++ } END { for (b in a) {print b} }' $FILEEXT | 
 							$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/serverips.lst.tmp
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/clientips.lst.tmp
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/serverports.lst.tmp
-						updated=1
-					done
+						$AWK -F" " '$1 ~/^[C]/ { a[$2]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/serverips.lst.tmp
+						$AWK -F" " '$1 ~/^[C]/ { a[$3]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/clientips.lst.tmp
+						$AWK -F" " '$1 ~/^[C]/ { a[$4]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/serverports.lst.tmp
+					fi
+
+
+					# Grab timestamp from file name			
+					ls -1 $FILEEXT | $AWK -F"_" ' { print strftime("%F %T",strtonum("0x"$2),1); }' >> "$DAY"/timestamps.lst.tmp
+					updated=1
+
+					exit
 
 					if [ $updated -ne 0 ]; then
 						# de-dupe and sort list files
 						for file in timestamps.lst softwareservice.lst serverips.lst clientips.lst serverports.lst versions.lst; do
-							chmod +w "$DAY"/$file
+							if [ -f "$DAY"/$file ]; then chmod +w "$DAY"/$file; fi
 							$AWK '{ !a[$0]++ } END { n=asorti(a,c) } END { for (i = 1; i <= n; i++) { print c[i] } }' "$DAY"/$file.tmp > "$DAY"/$file
 							chmod -w "$DAY"/$file
 							rm "$DAY"/$file.tmp
@@ -128,11 +193,7 @@ for DIR in "$BASEDIR"/*; do
 					fi
 
 					# archive it all
-					ARCNAME=$AMDNAME-$DATADATE.tar.bz2
-					if [ ! -w $ARCNAME ]; then
-						echo -e "\e[33m***WARNING:\e[0m Archive [$ARCNAME] already exists or can't write, skipping."
-						continue
-					fi
+					techo "Compressing $DAY"
 					$TAR -cjf "$MONTH"/$ARCNAME -C "$DAY" . >&2
 					if [ $? -eq 0 ]; then
 						#succesful, checksum the archive and clean up data files
@@ -142,28 +203,31 @@ for DIR in "$BASEDIR"/*; do
 						rm -rf "$DAY"/conf
 					else
 						#failed
-						echo -e "\e[33m***WARNING:\e[0m Couldn't archive data files in: $DAY, will try again next time."
+						techo "\e[33m***WARNING:\e[0m Couldn't archive data files in: $DAY, will try again next time."
 					fi
 				else
-					debugecho "***DEBUG: $DATADATE = today, not archiving yet."
+					debugecho "DATADATE: [$DATADATE] = today, not archiving yet."
 				fi
 				else
+					#no zdata files found, test to see if truely empty, or already archived.
 					if [ ! -r "$DAY/softwareservice.lst" ]; then
-						debugecho "\e[33m***WARNING:\e[0m No zdata files in: $DAY."
+						debugecho "\e[33m***WARNING:\e[0m No zdata files in: DAY: [$DAY]." 2
 					else
-						debugecho "***DEBUG: Already archived: $DAY"
+						debugecho "Already archived: DAY: [$DAY]" 2
 					fi
 				fi
 
 			done
 		done 
 	done
-	echo -e "Processing AMD: $AMDNAME complete."
+	techo "Processing AMD: $AMDNAME complete."
 	) &	
 done; wait
 
-echo -e "rtmarchive Archive Management Script"
-echo -e "Complete"
+tfinish=`date -u +%s`
+tdur=$((tfinish-tstart))
+techo "rtmarchive Archive Management Script"
+techo "Completed in $tdur seconds"
 
 
 

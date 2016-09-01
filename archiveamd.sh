@@ -61,7 +61,7 @@ function debugecho {
 }
 
 function techo {
-	echo -e "[`date -u`]: $1" 
+	echo -e "[`date -u`][$AMDNAME]: $1" 
 }
 
 
@@ -143,6 +143,8 @@ if [ -z "$URL" ]; then
 	exit 1
 fi
 
+techo "AMD Archiving script"
+techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
 techo "Archiving AMD: $AMDNAME beginning"
 tstart=`date -u +%s`
 
@@ -243,12 +245,12 @@ while read -r ts; do
 		BARL=0$($BC -l <<<  "(((($count/$diffcount) * $DISPCOLS)) / $DISPCOLS) * $DISPCOLS; "); BARL=${BARL%.*}; BARL=${BARL#0}; if [ "$BARL" == "" ]; then BARL=0; fi
 		# figure out progress bar blank length
 		BARR=$((DISPCOLS - BARL)); if [[ $BARR -lt 1 ]]; then BARR=0; fi
-		techo "Processed files from AMD: $AMDNAME $count/$diffcount $PERC%" 
-		techo "Processed intervals from AMD: $AMDNAME $tcount/$tscount $PERC2%" 
+		techo "Processed files: $count/$diffcount $PERC%" 
+		techo "Processed intervals: $tcount/$tscount $PERC2%" 
 		techo "[`$HEAD -c $BARL < /dev/zero | $TR '\0' '#' ``$HEAD -c $BARR < /dev/zero | $TR '\0' ' '`] $PERC%"
 	else
-		techo "Processed files from AMD: $AMDNAME $count/$diffcount" 
-		techo "Processed intervals from AMD: $AMDNAME $tcount/$tscount" 
+		techo "Processed files: $count/$diffcount" 
+		techo "Processed intervals: $tcount/$tscount" 
 	fi
 	debugecho "count: [$count], diffcount: [$diffcount], PERC: [$PERC], BARL: [$BARL], BARR: [$BARR], COLUMNS: [$DISPCOLS], tcount [$tcount], tscount: [$tscount], PERC2: [$PERC2]" 2
 
@@ -454,7 +456,7 @@ fi
 tfinish=`date -u +%s`
 tdur=$((tfinish-tstart))
 techo "Archiving AMD: $AMDNAME complete, downloaded $downloaded files in $tcount intervals"
-if [ $ccount -gt 0 ]; then techo "downloaded $ccount config files"; fi
+if [ $ccount -gt 0 ]; then techo "Downloaded $ccount config files"; fi
 if [ $warnings -ne 0 ]; then techo "\e[33mWarnings: $warnings\e[0m"; debugecho "Files with warnings: $warnlist"; fi
 techo "Completed in $tdur seconds"
 
