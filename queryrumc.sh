@@ -4,12 +4,13 @@
 #
 # Builds amdlist.cfg from querying RUM console.
 # parameters:
-# queryrumc.sh [update] [debug] [-e password] 
-# 0|1	update amdlist.cfg file in path below default 0 OFF
-# 0|1	debug output debug info. default 0 OFF
+# queryrumc.sh [-h] [-u] [-d] [-e password] [-c conffile] [-a amdlistfile]
+# -u	update amdlist.cfg file in path below default OFF
+# -d	debug output debug info (repeat for more verbosity). default OFF
 # -e	encrypt a password for RUMC access used to add RUMC entries to rumc.cfg
 #		(update and debug paramaters are ignored, not RUMC connection is made)
-#
+# -c	location of RUMC config file. Default specified below.
+# -a	location of AMD list file. Default specified below.
 
 #config 
 RUMCCONF=/etc/rumc.cfg
@@ -31,6 +32,7 @@ XXD=`which xxd`
 TEE=`which tee`
 XSLTPROC=`which xsltproc`
 MKTEMP=`which mktemp`
+CURL=`which curl`
 
 #command line parameters
 ENCODE=0
@@ -46,7 +48,7 @@ while getopts ":uhde:c:a:" OPT; do
 			OPTS=0	#show help
 			;;
 		d)
-			DEBUG=1
+			DEBUG=$((DEBUG + 1))
 			;;
 		e)
 			OPTS=1
@@ -86,15 +88,20 @@ fi
 RUMKEY=6f018ccd57a6f1d5757a13674a75c1c2
 
 function debugecho {
-        if [ $DEBUG -ne 0 ]; then echo -e "\e[2m***DEBUG\n$@\e[0m\n"; fi
-	}
+	dbglevel=${2:-1}
+	if [ $DEBUG -ge $dbglevel ]; then techo "*** DEBUG[$dbglevel]: $1"; fi
+}
+
+function techo {
+	echo -e "[`date -u`]: $1" 
+}
 
 function derumpassword {
-	echo `echo "$@" | $XXD -r -p | $OPENSSL enc -aes-128-ecb -d -K $RUMKEY`
+	echo "`echo "$@" | $XXD -r -p | $OPENSSL enc -aes-128-ecb -d -K $RUMKEY`"
 }
 
 function rumpassword {
-	echo `echo $@ | $OPENSSL enc -aes-128-ecb -e -K $RUMKEY | $XXD -p`
+	echo "`echo $@ | $OPENSSL enc -aes-128-ecb -e -K $RUMKEY | $XXD -p`"
 }
 
 urlencode() {
@@ -111,77 +118,62 @@ urlencode() {
 	done
 }
 
-
-echo "rtmarchive System: RUM Console AMD Query script"
-echo "Chris Vidler - Dynatrace DCRUM SME, 2016"
-echo ""
+tstart=`date -u +%s`
+techo "rtmarchive System: RUM Console AMD Query script"
+techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
 
 if [ $ENCODE == "-e" ]; then 
-	echo -e "Encoded password: $(rumpassword $EPASS)" 
-	echo -e "Complete"
-	exit
+	techo "Encoded password: $(rumpassword $EPASS)" 
+	exit 0
 fi
 
 
 if [ $UPDATELIST -ne 1 ]; then AMDLIST=/dev/null; fi
 if [ ! -w $AMDLIST ]; then
-	echo -e "\e[31m*** FATAL:\e[0m Can't update $AMDLIST"
-	exit
+	techo -e "\e[31m*** FATAL:\e[0m Can't update $AMDLIST"
+	exit 1
 fi
 echo -n "" | $TEE $AMDLIST
 
+rumcs=0
 IFS=", "
-echo `$CAT $RUMCCONF` | while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
+while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
 
 	if [[ $RUMNAME == "#"* ]]; then continue; fi
 
-	debugecho $RUMNAME,$RUMPROT,$RUMADDR,$RUMPORT,$RUMUSER,$RUMHASH
+	debugecho "$RUMNAME,$RUMPROT,$RUMADDR,$RUMPORT,$RUMUSER,$RUMHASH"
+	rumcs=$((rumcs+1))
 
 	RUMPASS=$(derumpassword $RUMHASH)
 
 
 	#query RUMC
-	echo "Connecting to RUM Console $RUMNAME on: $RUMPROT://$RUMADDR:$RUMPORT/"
+	techo "Connecting to RUM Console $RUMNAME on: $RUMPROT://$RUMADDR:$RUMPORT/"
 	#query RUMC server for XML data of all devices
 	#XML=`wget --no-check-certificate -q --header="Accept: application/xml" -O - --user '$RUMUSER' --password '$RUMPASS' $RUMPROT://$RUMADDR:$RUMPORT/cxf/rest/backup`
 	set +e
-	XML=`$WGET --no-check-certificate -q --header="Accept: application/xml" -O - --user "$RUMUSER" --password "$RUMPASS" $RUMPROT://$RUMADDR:$RUMPORT/cxf/rest/backup`
-	if [ $? -ne 0 ]; then echo -e "\e[31m***FATAL:\e[0m RUM Console '$RUMNAME' on $RUMPROT://$RUMADDR:$RUMPORT/ not responding/bad logon/etc." ; exit; fi
+	#XML=`$WGET --no-check-certificate -q --header="Accept: application/xml" -O - --user "$RUMUSER" --password "$RUMPASS" $RUMPROT://$RUMADDR:$RUMPORT/cxf/rest/backup`
+	XML=`$CURL --insecure --silent --header "Accept: application/xml" -u $RUMUSER:$RUMPASS $RUMPROT://$RUMADDR:$RUMPORT/cxf/rest/backup -o -`
+	if [ $? -ne 0 ]; then techo "\e[33m***WARNING:\e[0m RUM Console '$RUMNAME' on $RUMPROT://$RUMADDR:$RUMPORT/ not responding/bad logon/etc." ; continue; fi
 	set -e
-	debugecho "Returned XML: $XML"
+	debugecho "Returned XML: $XML" 2
+	if [ "$XML" == "" ]; then techo "\e[33m***WARNING:\e[0m RUM Console '$RUMNAME' on $RUMPROT://$RUMADDR:$RUMPORT/ not responding/bad logon/etc."; continue; fi
 
-	#Extract required info from XML
-	#gawk ' BEGIN { FS="|"; RS="</devices>"; OFS=","; } match($0,"<name>([a-zA-Z0-9]*?)</name><type>0<.+?\"IS_HTTPS\" value=\"([a-z]+?)\"/>.*?\"PORT\" value=\"([0-9]+?)\"/>.+?\"PASSWORD\" value=\"(.*?)\"/>.*?\"IP\" value=\"([^\"]*?)\"/>.*?\"VERSION\" value=\"([^\"]*?)\"/>.*?\"USER\" value=\"([^\"]*?)\"/>",a)  { print a[1],a[2],a[3],a[4],a[5],a[6],a[7] }'
-	# returns for each AMD in the RUMC
-	# 1: name
-	# 2: http/https flag
-	# 3: port number for comms
-	# 4: encrypted password
-	# 5: address for comms
-	# 6: version number
-	# 7: username for access
-	
-#need to do this smarter to handle format changes...
-	#12.3 and 12.4 AMDs
-	#  PARSED=`echo -e $XML | $AWK ' BEGIN { FS="|"; RS="</devices>"; OFS=","; } match($0,"<name>([a-zA-Z0-9]*?)</name><type>0<.+?\"IS_HTTPS\" value=\"([a-z]+?)\"/>.*?\"PORT\" value=\"([0-9]+?)\"/>.+?\"PASSWORD\" value=\"([a-fA-F0-9]+?)\"/>.*?\"IP\" value=\"([^\"]*?)\"/>.*?\"VERSION\" value=\"([^\"]*?)\"/>.*?\"USER\" value=\"([^\"]*?)\"/>",a)  { print a[1],a[2],a[3],a[4],a[5],a[6],a[7] }'`
-	#12.4 NG AMDs are different.
-	#PARSEDNG=`echo -e $XML | $AWK ' BEGIN { FS="|"; RS="</devices>"; OFS=","; } match($0,"<name>([a-zA-Z0-9]*?)</name><type>0<.+?\"IS_HTTPS\" value=\"([a-z]+?)\"/>.*?\"PASSWORD\" value=\"([a-fA-F0-9]+?)\"/>.+?\"PORT\" value=\"([0-9]+?)\"/>.*?\"IP\" value=\"([^\"]*?)\"/>.*?\"VERSION\" value=\"([^\"]*?)\"/>.*?\"USER\" value=\"([^\"]*?)\"/>",a)  { print a[1],a[2],a[4],a[3],a[5],a[6],a[7] }'`
-	
-	echo "Parsing response from RUM Console...."
+	techo "Parsing response from RUM Console...."
 	PARSED=`echo -e $XML | $XSLTPROC --nonet rumcquery.xslt -`
 
 	#test for empty result - probably bad/unknown data from RUMC
 	if [ "$PARSED" == "" ]; then
-		debugecho "No results from RUMC after XSLT parse".
-		echo "***FATAL: Unable to read response from RUMC. Aborting."
-		exit 1
+		debugecho "No results from RUMC after XSLT parse"
+		techo "\e[33m***WARNING:\e[0m Unable to read response from RUMC."
+		continue
 	fi
 		
 	IFS=$''
-	debugecho "Parsed result: $PARSED"
+	debugecho "Parsed result: $PARSED" 2
 	
 	
-	echo "Creating $AMDLIST output"
+	techo "Creating $AMDLIST output"
 	IFS=$','
 	echo -n "" | $TEE $AMDLIST
 	echo "# rtmarchive AMD List" | $TEE -a $AMDLIST
@@ -204,29 +196,27 @@ echo `$CAT $RUMCCONF` | while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHA
 		RETURN=`$WGET --no-check-certificate -q --header="Accept: application/xml" -O - $url/RtmDataServlet?cmd=version`
 		if [ $? -ne 0 ]; then RETURN=; fi
 		set -e
-		debugecho "AMD Version Info: $RETURN"
+		debugecho "AMD Version Info: $RETURN" 2
 		if [[ $RETURN == *"Emulated"* ]]; then
 			#Archive AMD, disable it.
-			echo -en "\e[2m"
 			echo "# AMD '$a' ($e:$c) is an archive AMD. Disabling it." | $TEE -a $AMDLIST
 			echo "D,$url,$a" | $TEE -a $AMDLIST
-			echo -en "\e[0m"
 		elif [[ $RETURN == "" ]]; then
 			#AMD returned no version data? not working? disable it
-			echo -e "\e[33m***WARNING: No response from AMD '$a' ($e:$c)\e[0m\e[2m"
+			techo "\e[33m***WARNING:\e[0m No response from AMD '$a' ($e:$c)"
 			echo "# AMD '$a' ($e:$c) returned no version info or not responding, disabling it." | $TEE -a $AMDLIST
 			echo "D,$url,$a" | $TEE -a $AMDLIST
-			echo -en "\e[0m"
 		else
-			echo -en "\e[32m"
 			echo "# AMD '$a' ($e:$c) version: $f active." | $TEE -a $AMDLIST
 			echo "A,$url,$a" | $TEE -a $AMDLIST
-			echo -en "\e[0m"
 		fi
 		
 	done;
 
-done;
+done < $RUMCCONF
 
-echo -e "\e[0mCompleted."
+tfinish=`date -u +%s`
+tdur=$((tfinish-tstart))
+techo "\e[0mCompleted $rumcs RUM Console queries in $tdur seconds."
+exit 0
 
