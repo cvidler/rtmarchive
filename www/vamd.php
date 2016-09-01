@@ -23,8 +23,17 @@ define("BASEDIR", "/var/spool/rtmarchive/");	//location of data archive
 //define("PASS", "history");			// "
 
 
+$eservices = 1;
+
 
 // Code follows do not edit
+function searchForFile($fileToSearchFor){
+	$numberOfFiles = count(glob($fileToSearchFor));
+	if($numberOfFiles == 0){ return(FALSE); } else { return(TRUE);}
+}
+
+
+
 header_remove();
 
 if ( is_dir(BASEDIR) ) {} else {
@@ -63,6 +72,7 @@ $command = "";
 if ( isset( $_GET['cmd']) ) { $command = strtolower($_GET['cmd']); }
 if ( isset( $_GET['cfg_oper']) ) { $command = $_GET['cfg_oper']; }
 if ( isset( $_SERVER['QUERY_STRING']) ) { if ( $_SERVER['QUERY_STRING'] === 'hid' ) { $command = "hid"; } }
+if ( isset( $_SERVER['QUERY_STRING']) ) { if ( $_SERVER['QUERY_STRING'] === 'v2' ) { $command = "v2"; } }
 
 if ( $command == "" ) { echo "***FATAL: No command. Aborting."; http_response_code(400); exit; }		// unknown command
 
@@ -115,9 +125,13 @@ if (!isset($datasets[$user])) { echo "***FATAL no config. Aborting."; http_respo
 // build temp dir variable, use the unique ID
 $tempdir = BASEDIR.".temp/".$hids[$user]."/";
 $confdir = $tempdir."conf/";
-$noarchvie = 0;
+$noarchive = 0;
 if ( ! file_exists($tempdir) ) { $noarchive = 1; }
 
+
+//determine (from available file types) if data is HS AMD data or Classic AMD data
+$ngprobe = 0;
+if ( ! searchForFile($tempdir."/zdata_*_vol") ) { $ngprobe = 0; } else { $ngprobe = 1; }
 
 //check validity
 //if ( ! file_exists($archive) ) { $noarchive = 1; }
@@ -132,19 +146,26 @@ header("Expires: 1 Jan 1970 00:00:00 GMT");
 
 // RtmDataServlet (the one we really want)
 if ( $command === "version" ) {
-// D-RTM v. ndw.12.3.0.791 Copyright (C) 1999-2011 Compuware Corp.
+// ND-RTM v. ndw.12.3.0.791 Copyright (C) 1999-2011 Compuware Corp.
 // time_stamp=1449719436906
 // os=Red Hat Enterprise Linux Server release 6.6 (Santiago)
 // instances=true
 	$release = file_get_contents("/etc/redhat-release");
-	echo "ND-RTM v. ndw.13.0.0.000 rtmarchive Emulated AMD\n";
+	echo "ND-RTM v. ndw.12.4.0.000 rtmarchive Emulated AMD\n";
 	echo "time_stamp=".round(microtime(true) * 1000)."\n";
 	echo "os=".str_replace(array("\r","\n"), "", $release)."\n";
 	echo "instances=true\n";
+	if ( $ngprobe ) { 
+		echo "ng.probe=true\n";
+	}
+	if ( $eservices ) {
+		echo "licensing=v2\n";
+	}
 	exit;
 
 } elseif ( $command === "instance" ) {
-	echo "rtm\nnfc\n";
+	#echo "rtm\nnfc\n";
+	echo "rtm\n";
 	exit;
 
 } elseif (( $command === "get_dir" ) || ( $command === "zip_dir" ))  {
@@ -155,8 +176,12 @@ if ( $command === "version" ) {
 	//}
 	$data = "";
 	//$data = `ls -1 $tempdir`;.
-	if ( !file_exists($tempdir) ) { echo "***FATAL: Directory $tempdir not found. Aborting."; http_response_code(404); exit; }
-	$data = implode("\n", array_diff(scandir($tempdir),array(".","..","conf")));
+	if ( !file_exists($tempdir) ) { echo "***FATAL: Directory $tempdir not found. Aborting."; http_response_code(500); exit; }
+
+	//$data = implode("\n", array_diff(scandir($tempdir),array(".","..","conf")));
+
+	$data = implode("\n", array_map('basename', glob($tempdir."/*_*_*")));
+
 	if ( $command === "zip_dir" ) { $data = gzencode($data); header('Content-Encoding: gzip'); }
 	echo $data;
 	exit;
@@ -194,6 +219,7 @@ if ( $command === "version" ) {
 
 } elseif ( $command === "get_cfg_dir" ) {
 	echo "0\n";
+	if ( !file_exists($confdir) ) { http_response_code(500); exit; }
 	$conffiles = array_diff(scandir($confdir),array(".","..","conf"));
 	foreach ($conffiles as $conffile) {
 		if ( $conffile == "0" ) { continue; }
@@ -239,6 +265,40 @@ if ( $command === "version" ) {
 	echo $hids[$user]."\n";
 	exit;
 
+
+//v2 - respond with v2 license strings
+} elseif ( $command === "v2" ) {
+	echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><licenses><license>";
+	echo "<feature><key>A-KERBEROS</key><value>true</value></feature>";
+	echo "<feature><key>A-SOAP-HTTP</key><value>true</value></feature>";
+	echo "<feature><key>A-NETFLOW</key><value>true</value></feature>";
+	echo "<feature><key>A-PARSER</key><value>true</value></feature>";
+	echo "<feature><key>A-LTHTTP</key><value>true</value></feature>";
+	echo "<feature><key>A-RMI</key><value>true</value></feature>";
+	echo "<feature><key>A-CORBA</key><value>true</value></feature>";
+	echo "<feature><key>A-IBMMQ</key><value>true</value></feature>";
+	echo "<feature><key>A-RPC</key><value>true</value></feature>";
+	echo "<feature><key>A-DRDA</key><value>true</value></feature>";
+	echo "<feature><key>A-HTTP</key><value>true</value></feature>";
+	echo "<feature><key>A-MYSQL</key><value>true</value></feature>";
+	echo "<feature><key>A-DNS</key><value>true</value></feature>";
+	echo "<feature><key>A-INFORMIX</key><value>true</value></feature>";
+	echo "<feature><key>A-SAPRFC</key><value>true</value></feature>";
+	echo "<feature><key>A-JOLT</key><value>true</value></feature>";
+	echo "<feature><key>A-ORACLE</key><value>true</value></feature>";
+	echo "<feature><key>A-VOIP</key><value>true</value></feature>";
+	echo "<feature><key>A-AMD-SIZE</key><value>20000</value></feature>";
+	echo "<feature><key>A-OF-HTTP</key><value>true</value></feature>";
+	echo "<feature><key>A-SAPGUI</key><value>5000</value></feature>";
+	echo "<feature><key>A-SMTP</key><value>true</value></feature>";
+	echo "<feature><key>A-GENERIC-TRANS</key><value>true</value></feature>";
+	echo "<feature><key>A-DSSL</key><value>true</value></feature>";
+	echo "<feature><key>A-ICA</key><value>true</value></feature>";
+	echo "<feature><key>A-SMB</key><value>true</value></feature>";
+	echo "<feature><key>A-LDAP</key><value>true</value></feature>";
+	echo "<feature><key>A-TDS</key><value>true</value></feature>";
+	echo "</license></licenses>";
+	exit;
 
 // catchall
 } else {
