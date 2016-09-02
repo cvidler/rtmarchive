@@ -71,6 +71,7 @@ if ( file_exists("activedatasets.conf") ) {
 $command = "";
 if ( isset( $_GET['cmd']) ) { $command = strtolower($_GET['cmd']); }
 if ( isset( $_GET['cfg_oper']) ) { $command = $_GET['cfg_oper']; }
+if ( isset( $_GET['product']) ) { $suffix = $_GET['product']; }
 if ( isset( $_SERVER['QUERY_STRING']) ) { if ( $_SERVER['QUERY_STRING'] === 'hid' ) { $command = "hid"; } }
 if ( isset( $_SERVER['QUERY_STRING']) ) { if ( $_SERVER['QUERY_STRING'] === 'v2' ) { $command = "v2"; } }
 
@@ -180,7 +181,12 @@ if ( $command === "version" ) {
 
 	//$data = implode("\n", array_diff(scandir($tempdir),array(".","..","conf")));
 
-	$data = implode("\n", array_map('basename', glob($tempdir."/*_*_*")));
+	$data = glob($tempdir."/*_*_*");
+	$data = array_map('basename', $data);
+	$data = preg_replace("/([a-z]+_[a-f0-9]{8}_[a-f0-9]+_[tb])(.*)/","$1",$data);
+	rsort($data);
+	$data = array_unique($data);
+	$data = implode("\n", $data);
 
 	if ( $command === "zip_dir" ) { $data = gzencode($data); header('Content-Encoding: gzip'); }
 	echo $data;
@@ -191,23 +197,21 @@ if ( $command === "version" ) {
 	$entry = urldecode($_GET["entry"]);
 	//sanitise filename
 	$entry = preg_replace("/[^a-z0-9_]/", "", $entry);
-	if ( $entry === "" ) { exit; }
-	//$data = ""; $i = 0;
-	//for ( $i = 0; $i < $datacount; $i++ ) {
-	//	$data = `/usr/bin/tar -tf "$archives[$i]" | /usr/bin/awk -F" " ' match($0,"(.+/)+(.+)$",a) { print a[2] } '`;
-	//	if ( strpos($data, $entry) !== false ) {
-	//		$data = `/usr/bin/tar -Oxf "$archives[$i]" "*/$entry" 2> /dev/null`;
-	//		break;
-	//	}
-	//}
-	$filename = $tempdir.$entry;
-	if ( !file_exists($filename) ) { echo "***FATAL: File $entry not found. Aborting."; http_response_code(404); exit; }
+	if ( $entry === "" ) { http_response_code(400); exit; }
+
+	$filenames = $tempdir.$entry."*";
+	$filelist = glob($filenames);
+	if ( ! count($filelist) ) { echo "***FATAL: Requested Files: ".$filenames." not found. Aborting."; http_response_code(404); exit; }
+
 	$data = "";
-	$file = fopen($filename, "r");
-	if ( !$file ) { echo "***FATAL: File not readable: $filename. Aborting."; http_response_code(404); exit;}
-	$data = fread($file, filesize($filename));	
+	$filelistlen = count($filelist);
+	for ( $filenum = 0; $filenum < $filelistlen; $filenum++ ) {
+		$fdata = file_get_contents($filelist[$filenum]);
+		$data = $data."".$fdata;	
+	}
+
 	if ( $command === "zip_entry" ) { $data = gzencode($data); header('Content-Encoding: gzip'); }
-        echo $data;
+	echo $data;
 	exit;
 
 
