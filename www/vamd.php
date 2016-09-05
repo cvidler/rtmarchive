@@ -18,7 +18,7 @@
 
 
 // Config
-define("CHUNK_SIZE", 1024*1024); // Size (in bytes) of files chunk
+define("CHUNK_SIZE", 10*1024*1024); // Size (in bytes) of files chunk
 define("BASEDIR", "/var/spool/rtmarchive/");	//location of data archive
 //define("USER", "rtmarchive");			//auth for RUMC/CAS to use
 //define("PASS", "history");			// "
@@ -44,6 +44,7 @@ function readfile_chunked($filename, $retbytes = TRUE) {
 		return false;
 	}
 	while (!feof($handle)) {
+		set_time_limit(30);
 		$buffer = fread($handle, CHUNK_SIZE);
 		echo $buffer;
 		ob_flush();
