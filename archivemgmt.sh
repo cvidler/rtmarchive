@@ -115,24 +115,6 @@ for DIR in "$BASEDIR"/*; do
 						continue
 					fi
 
-#					for ZDATA in $DAY/zdata_*; do
-#						debugecho "Processing: ZDATA: [$ZDATA]" 2
-#						# Grab timestamp from zdata contents (doesn't work on HS AMD zdata, so disabling)
-#						#$AWK -F" " '$1=="#TS:" { print $2", "strftime("%c",strtonum("0x"$2),1); }' "$ZDATA" >> "$DAY"/timestamps.lst.tmp
-#						# Grab timestamp from file name						
-#						`echo "$ZDATA" | $AWK -F"_" ' { print strftime("%F %T",strtonum("0x"$2),1); }' >> "$DAY"/timestamps.lst.tmp`
-#						# grab version from non HS AMD zdata						
-#						$AWK -F" " '$1=="V" { printf("%s.%s.%s.%s", $2,$3,$4,$5) }' "$ZDATA" >> "$DAY"/versions.lst.tmp
-#						# grab version from HS AMD zdata
-#						$AWK -F" " '$1=="#Producer:" { sub("ndw.","" , $2); print $2 }' "$ZDATA" >> "$DAY"/versions.lst.tmp 
-#						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' "$ZDATA" | 
-#							$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
-#						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/serverips.lst.tmp
-#						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/clientips.lst.tmp
-#						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' "$ZDATA" >> "$DAY"/serverports.lst.tmp
-#						updated=1
-#					done
-						
 					debugecho "Processing: ZDATA: [$DAY/zdata_*]"
 					ESCDIR=$(printf '%q' "$DAY")
 					debugecho "ESCDIR: [$ESCDIR]" 2		
@@ -146,11 +128,6 @@ for DIR in "$BASEDIR"/*; do
 					NDATA=$(ls -1 "$DAY"/ndata_*_t_rtm 2> /dev/null | wc -l)
 					set -e
 					debugecho "ZDATA: [$ZDATA], VOLDATA: [$VOLDATA], IPDATA: [$IPDATA], NDATA: [$NDATA]" 1
-					#FILEEXT=""				
-					#if [ $ZDATA -ne 0 ]; then FILEEXT="${FILEEXT}\"${DAY}/zdata_*_t\" "; fi
-					#if [ $VOLDATA -ne 0 ]; then FILEEXT="${FILEEXT}${DAY}/zdata_*_t_vol "; fi
-					#if [ $IPDATA -ne 0 ]; then FILEEXT="${FILEEXT}\"${DAY}/zdata_*_t_ip\" "; fi
-					#debugecho "FILEEXT: [$FILEEXT]" 1
 
 					# grab version from non HS AMD zdata						
 					if [ $ZDATA -ne 0 ]; then $AWK -F" " '$1=="V" { printf("%s.%s.%s.%s", $2,$3,$4,$5) }' "$DAY"/zdata_*_t >> "$DAY"/versions.lst.tmp; fi
@@ -195,8 +172,6 @@ for DIR in "$BASEDIR"/*; do
 					# Grab timestamp from file name			
 					ls -1 $FILEEXT | $AWK -F"_" ' { print strftime("%F %T",strtonum("0x"$2),1); }' >> "$DAY"/timestamps.lst.tmp
 					updated=1
-
-					#exit
 
 					if [ $updated -ne 0 ]; then
 						# de-dupe and sort list files
