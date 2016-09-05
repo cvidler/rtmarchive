@@ -96,6 +96,7 @@ for DIR in "$BASEDIR"/*; do
 				debugecho "Processing date: DATADATE: [$DATADATE]" 2
 
 				# process zdata files if found (if not probably archived already)
+				ZCOUNT=0
 				set +e
 				ZCOUNT=$(ls "$DAY"/zdata_* 2> /dev/null | wc -l)
 				set -e
@@ -137,18 +138,19 @@ for DIR in "$BASEDIR"/*; do
 					debugecho "ESCDIR: [$ESCDIR]" 2		
 
 					#test available file types
+					ZDATA=0; VOLDATA=0; IPDATA=0; NDATA=0
 					set +e
-					ZDATA=`ls -1 "$DAY"/zdata_*_t | wc -l`
-					VOLDATA=`ls -1 "$DAY"/zdata_*_t_vol | wc -l`
-					IPDATA=`ls -1 "$DAY"/zdata_*_t_ip | wc -l`
-					NDATA=`ls -1 "$DAY"/ndata_*_t_rtm | wc -l`
+					ZDATA=$(ls -1 "$DAY"/zdata_*_t 2> /dev/null | wc -l)
+					VOLDATA=$(ls -1 "$DAY"/zdata_*_t_vol 2> /dev/null | wc -l)
+					IPDATA=$(ls -1 "$DAY"/zdata_*_t_ip 2> /dev/null | wc -l)
+					NDATA=$(ls -1 "$DAY"/ndata_*_t_rtm 2> /dev/null | wc -l)
 					set -e
 					debugecho "ZDATA: [$ZDATA], VOLDATA: [$VOLDATA], IPDATA: [$IPDATA], NDATA: [$NDATA]" 1
-					FILEEXT=""				
-					if [ $ZDATA -ne 0 ]; then FILEEXT="${FILEEXT}\"${ESCDIR}\"/zdata_*_t "; fi
-					if [ $VOLDATA -ne 0 ]; then FILEEXT="${FILEEXT}\"${ESCDIR}\"/zdata_*_t_vol "; fi
-					if [ $IPDATA -ne 0 ]; then FILEEXT="${FILEEXT}\"${ESCDIR}\"/zdata_*_t_ip "; fi
-					debugecho "FILEEXT: [$FILEEXT]" 1
+					#FILEEXT=""				
+					#if [ $ZDATA -ne 0 ]; then FILEEXT="${FILEEXT}\"${DAY}/zdata_*_t\" "; fi
+					#if [ $VOLDATA -ne 0 ]; then FILEEXT="${FILEEXT}${DAY}/zdata_*_t_vol "; fi
+					#if [ $IPDATA -ne 0 ]; then FILEEXT="${FILEEXT}\"${DAY}/zdata_*_t_ip\" "; fi
+					#debugecho "FILEEXT: [$FILEEXT]" 1
 
 					# grab version from non HS AMD zdata						
 					if [ $ZDATA -ne 0 ]; then $AWK -F" " '$1=="V" { printf("%s.%s.%s.%s", $2,$3,$4,$5) }' "$DAY"/zdata_*_t >> "$DAY"/versions.lst.tmp; fi
@@ -156,13 +158,27 @@ for DIR in "$BASEDIR"/*; do
 					if [ $VOLDATA -ne 0 ]; then $AWK -F" " '$1=="#Producer:" { sub("ndw.","" , $2); print $2 }' "$DAY"/zdata_*_t_vol >> "$DAY"/versions.lst.tmp; fi
 
 					#grab server/client/port details from zdata 'U' and 'h' records
-					set -x
-					$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' $FILEEXT | 
-						$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
-					$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/serverips.lst.tmp
-					$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/clientips.lst.tmp
-					$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/serverports.lst.tmp
-					set +x
+					if [ $ZDATA -ne 0 ]; then
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t | 
+							$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t >> "$DAY"/serverips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t >> "$DAY"/clientips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t >> "$DAY"/serverports.lst.tmp
+					fi
+					if [ $VOLDATA -ne 0 ]; then
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_vol | 
+							$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_vol >> "$DAY"/serverips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_vol >> "$DAY"/clientips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_vol >> "$DAY"/serverports.lst.tmp
+					fi
+					if [ $IPDATA -ne 0 ]; then
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_ip | 
+							$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_ip >> "$DAY"/serverips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_ip >> "$DAY"/clientips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_ip >> "$DAY"/serverports.lst.tmp
+					fi
 
 					#grab server/client/port details from ndata
 					if [ $NDATA -ne 0 ]; then
@@ -180,7 +196,7 @@ for DIR in "$BASEDIR"/*; do
 					ls -1 $FILEEXT | $AWK -F"_" ' { print strftime("%F %T",strtonum("0x"$2),1); }' >> "$DAY"/timestamps.lst.tmp
 					updated=1
 
-					exit
+					#exit
 
 					if [ $updated -ne 0 ]; then
 						# de-dupe and sort list files
@@ -222,6 +238,9 @@ for DIR in "$BASEDIR"/*; do
 	done
 	techo "Processing AMD: $AMDNAME complete."
 	) &	
+	if [ $? -ne 0 ]; then
+		techo "\e[33m***WARNING:\e[0m $AMDNAME failed archive management."
+	fi
 done; wait
 
 tfinish=`date -u +%s`

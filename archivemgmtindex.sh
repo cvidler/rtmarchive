@@ -157,7 +157,8 @@ for AMD in "$BASEDIR"/*; do
 			done
 
 		done
-	)
+	) &
+	wait
 done
 
 tfinish=`date -u +%s`
