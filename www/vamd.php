@@ -18,6 +18,7 @@
 
 
 // Config
+define("CHUNK_SIZE", 1024*1024); // Size (in bytes) of files chunk
 define("BASEDIR", "/var/spool/rtmarchive/");	//location of data archive
 //define("USER", "rtmarchive");			//auth for RUMC/CAS to use
 //define("PASS", "history");			// "
@@ -32,6 +33,31 @@ function searchForFile($fileToSearchFor){
 	if($numberOfFiles == 0){ return(FALSE); } else { return(TRUE);}
 }
 
+
+// Read a file and display its content chunk by chunk
+function readfile_chunked($filename, $retbytes = TRUE) {
+	$buffer = "";
+	$cnt =0;
+	// $handle = fopen($filename, "rb");
+	$handle = fopen($filename, "rb");
+	if ($handle === false) {
+		return false;
+	}
+	while (!feof($handle)) {
+		$buffer = fread($handle, CHUNK_SIZE);
+		echo $buffer;
+		ob_flush();
+		flush();
+		if ($retbytes) {
+			$cnt += strlen($buffer);
+		}
+	}
+	$status = fclose($handle);
+	if ($retbytes && $status) {
+		return $cnt; // return num. bytes delivered like readfile() does.
+	}
+	return $status;
+}
 
 
 header_remove();
@@ -203,15 +229,21 @@ if ( $command === "version" ) {
 	$filelist = glob($filenames);
 	if ( ! count($filelist) ) { echo "***FATAL: Requested Files: ".$filenames." not found. Aborting."; http_response_code(404); exit; }
 
+	if ( $command === "zip_entry" ) { header('Content-Encoding: gzip'); ob_start("ob_gzhandler"); }
+	
 	$data = "";
 	$filelistlen = count($filelist);
+
 	for ( $filenum = 0; $filenum < $filelistlen; $filenum++ ) {
-		$fdata = file_get_contents($filelist[$filenum]);
-		$data = $data."".$fdata;	
+		//$fdata = file_get_contents($filelist[$filenum]);
+		//$data = $data."".$fdata;	
+		
+		//if ( $command === "zip_entry" ) { echo gzencode(fpassthru($fhandle)); } else { fpassthru($fhandle); }
+		readfile_chunked($filelist[$filenum]);
 	}
 
-	if ( $command === "zip_entry" ) { $data = gzencode($data); header('Content-Encoding: gzip'); }
-	echo $data;
+	//echo $data;
+	flush();
 	exit;
 
 
