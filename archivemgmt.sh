@@ -110,8 +110,8 @@ for DIR in "$BASEDIR"/*; do
 
 					# check for existing archive, skip if found - don't want to overwrite archived data.
 					ARCNAME=$AMDNAME-$DATADATE.tar.bz2
-					if [ ! -w $ARCNAME ] && [ -f $ARCNAME ]; then
-						techo "\e[33m***WARNING:\e[0m Archive [$ARCNAME] already exists or can't write, skipping."
+					if [ ! -w "$MONTH"/$ARCNAME ] && [ -f "$MONTH"/$ARCNAME ]; then
+						techo "\e[33m***WARNING:\e[0m Archive [$MONTH/$ARCNAME] already exists or can't write, skipping."
 						continue
 					fi
 

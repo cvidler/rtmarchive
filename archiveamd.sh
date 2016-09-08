@@ -186,7 +186,7 @@ if [ $RC -ne 0 ]; then techo "\e[31m***FATAL:\e[0m Could not download directory 
 
 
 #unzip, filter, and sort (by timestamp) all the interval data files
-$GUNZIP -q -c "$tmpfile" | grep -oE '[a-z0-9]+_[0-9a-f]+_[150a]+_[tb].*' | $SORT -t "_" -k 2d,3 -k 1d,2 > "$AMDDIR/currdir.lst"
+$GUNZIP -q -c "$tmpfile" | grep -oE '[a-z0-9A-Z%\-\ _]+_[0-9a-f]{8}_[a-f0-9]+_[tb][_a-z]*' | $SORT -t "_" -k 2d,3 -k 1d,2 > "$AMDDIR/currdir.lst"
 RC=$?
 if [ $RC -ne 0 ]; then techo "\e[31m***FATAL:\e[0m Could not process directory listing from AMD: [$AMDNAME] using data: [$tmpfile] Aborting." >&2 ; exit 1; fi
 rm -f "$tmpfile"

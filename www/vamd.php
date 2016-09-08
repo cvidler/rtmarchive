@@ -18,7 +18,7 @@
 
 
 // Config
-define("CHUNK_SIZE", 10*1024*1024); // Size (in bytes) of files chunk
+define("CHUNK_SIZE", 5*1024*1024); // Size (in bytes) of files chunk
 define("BASEDIR", "/var/spool/rtmarchive/");	//location of data archive
 //define("USER", "rtmarchive");			//auth for RUMC/CAS to use
 //define("PASS", "history");			// "
@@ -210,7 +210,7 @@ if ( $command === "version" ) {
 
 	$data = glob($tempdir."/*_*_*");
 	$data = array_map('basename', $data);
-	$data = preg_replace("/([a-z]+_[a-f0-9]{8}_[a-f0-9]+_[tb])(.*)/","$1",$data);
+	$data = preg_replace("/([a-z0-9A-Z-% _]+_[0-9a-f]{8}_[a-f0-9]+_[tb])([_a-z]*)/","$1",$data);
 	rsort($data);
 	$data = array_unique($data);
 	$data = implode("\n", $data);
@@ -224,7 +224,7 @@ if ( $command === "version" ) {
 	$entry = urldecode($_GET["entry"]);
 	//sanitise filename
 	$entry = preg_replace("/[^a-z0-9_]/", "", $entry);
-	if ( $entry === "" ) { http_response_code(400); exit; }
+	if ( $entry === "" ) { echo "***FATAL Invalid entry parameter. Aborting."; http_response_code(400); exit; }
 
 	$filenames = $tempdir.$entry."*";
 	$filelist = glob($filenames);
@@ -236,10 +236,6 @@ if ( $command === "version" ) {
 	$filelistlen = count($filelist);
 
 	for ( $filenum = 0; $filenum < $filelistlen; $filenum++ ) {
-		//$fdata = file_get_contents($filelist[$filenum]);
-		//$data = $data."".$fdata;	
-		
-		//if ( $command === "zip_entry" ) { echo gzencode(fpassthru($fhandle)); } else { fpassthru($fhandle); }
 		readfile_chunked($filelist[$filenum]);
 	}
 
