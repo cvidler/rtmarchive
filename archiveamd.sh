@@ -260,7 +260,7 @@ while read -r ts; do
 	month=`TZ=UTC; printf "%(%m)T" 0x$ts`
 	day=`TZ=UTC; printf "%(%d)T" 0x$ts`
 	#timestamp to correct time on downloaded files
-	FTS=`printf "%(%Y%m%d%H%M)T.%(%S)T" 0x$ts`
+	FTS=`TZ=UTC; printf "%(%Y%m%d%H%M)T.%(%S)T" 0x$ts`
 	debugecho "FTS: [$FTS]" 2
 
 	# Check for correct directory structure - create if needed
@@ -329,7 +329,7 @@ while read -r ts; do
 
 		#set correct timestamp on file
 		set +e
-		`TZ=UTC $TOUCH -c -t $FTS  "$file"`
+		`TZ=UTC; $TOUCH -c -t $FTS  "$file"`
 		set -e
 
 		# Extract AMD UUID
