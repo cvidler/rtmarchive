@@ -186,7 +186,7 @@ if [ $RC -ne 0 ]; then techo "\e[31m***FATAL:\e[0m Could not download directory 
 
 
 #unzip, filter, and sort (by timestamp) all the interval data files
-$GUNZIP -q -c "$tmpfile" | grep -oE '[a-z0-9A-Z%\-\ _]+_[0-9a-f]{8}_[a-f0-9]+_[tb][_a-z]*' | $SORT -t "_" -k 2d,3 -k 1d,2 > "$AMDDIR/currdir.lst"
+$GUNZIP -q -c "$tmpfile" | grep -oE '[a-z0-9A-Z%\-\ _]+_[0-9a-f]{8}_[a-f0-9]+_[tb][_0-9a-z]*' | $SORT -t "_" -k 2d,3 -k 1d,2 > "$AMDDIR/currdir.lst"
 RC=$?
 if [ $RC -ne 0 ]; then techo "\e[31m***FATAL:\e[0m Could not process directory listing from AMD: [$AMDNAME] using data: [$tmpfile] Aborting." >&2 ; exit 1; fi
 rm -f "$tmpfile"
@@ -259,6 +259,9 @@ while read -r ts; do
 	year=`TZ=UTC; printf "%(%Y)T" 0x$ts`
 	month=`TZ=UTC; printf "%(%m)T" 0x$ts`
 	day=`TZ=UTC; printf "%(%d)T" 0x$ts`
+	#timestamp to correct time on downloaded files
+	FTS=`printf "%(%Y%m%d%H%M)T.%(%S)T" 0x$ts`
+	debugecho "FTS: [$FTS]" 2
 
 	# Check for correct directory structure - create if needed
 	ARCDIR="$AMDDIR/$year/$month/$day/"
@@ -326,7 +329,6 @@ while read -r ts; do
 
 		#set correct timestamp on file
 		set +e
-		FTS=`echo "${p}" | $AWK -F"_" ' { print strftime("%Y%m%d%H%M.%S",strtonum("0x"$2),1); } '`
 		`TZ=UTC $TOUCH -c -t $FTS  "$file"`
 		set -e
 
