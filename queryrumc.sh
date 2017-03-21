@@ -139,6 +139,10 @@ rumcs=0
 IFS=", "
 while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
 
+	#blank line
+	if [ "$RUMNAME,$RUMPROT,$RUMADDR,$RUMPORT,$RUMUSER,$RUMHASH" == ",,,,," ]; then continue; fi
+
+	#comment line
 	if [[ $RUMNAME == "#"* ]]; then continue; fi
 
 	debugecho "$RUMNAME,$RUMPROT,$RUMADDR,$RUMPORT,$RUMUSER,$RUMHASH"
@@ -181,7 +185,18 @@ while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
 	
 	echo "$PARSED" | while read a b c d e f g; do
 	
+		#blank line
+		if [ "$a-$b-$c-$d-$e-$f-$g" == "------" ]; then continue; fi
+
 		debugecho "parsing line: $a-$b-$c-$d-$e-$f-$g"
+
+		if [ "$a" == "" ]; then
+			#blank name, reuse address
+			debugecho "blank name found", 2
+			a=${e//\./_}_$c
+			debugecho "using: [$a]", 2
+		fi
+
 		if [ "$b" == "false" ]; then 
 			b=http
 		else 
