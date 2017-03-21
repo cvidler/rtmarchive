@@ -75,6 +75,7 @@ apachectl graceful
 
 %description
 %{summary}
+`git describe | tr '-' '_'`
 
 
 %prep
