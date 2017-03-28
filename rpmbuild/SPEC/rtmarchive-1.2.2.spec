@@ -38,13 +38,13 @@ firewall-cmd --reload
 
 mkdir -p /var/log/rtmarchive
 chown %{name}:%{name} /var/log/rtmarchive
-chmod 664 /var/log/rtmarchive
+chmod 775 /var/log/rtmarchive
 mkdir -p /var/spool/rtmarchive
 chown %{name}:%{name} /var/spool/rtmarchive
-chmod 664 /var/spool/rtmarchive
+chmod 775 /var/spool/rtmarchive
 mkdir -p /var/spool/rtmarchive/.temp
 chown apache:apache /var/spool/rtmarchive/.temp
-chmod 755 /var/spool/rtmarchive/.temp
+chmod 775 /var/spool/rtmarchive/.temp
 chown %{name}:%{name} /etc/amdlist.cfg
 chmod 664 /etc/amdlist.cfg
 chown %{name}:%{name} /etc/rumc.cfg
@@ -53,7 +53,7 @@ chown %{name}:%{name} -R /var/www/rtmarchive/
 chown apache:apache /var/www/rtmarchive/activedatasets.conf
 chmod 664 /var/www/rtmarchive/activedatasets.conf
 chown %{name}:%{name} -R /opt/rtmarchive
-chmod 664 /opt/rtmarchive
+chmod 775 /opt/rtmarchive
 chown %{name}:%{name} /etc/httpd/conf.d/0_rtmarchive.conf
 chmod 664 /etc/httpd/conf.d/0_rtmarchive.conf
 
