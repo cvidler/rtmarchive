@@ -12,6 +12,8 @@
 
 # Config defaults
 DEBUG=0
+GETCONF=1						#grab config files too
+FORCEDL=0						#always download everything (SLOW!)
 DISPCOUNT=250					#print progress bar every x files processed
 DISPCOLS=${COLUMNS:-132}		#default character screen width, read from environment, default to 132
 
@@ -19,18 +21,20 @@ DISPCOLS=${COLUMNS:-132}		#default character screen width, read from environment
 
 # --- Script below do not edit ---
 set -euo pipefail
-IFS=$',\n\t'
+IFS=$' ,\n\t'
 
 AWK=`which awk`
 WGET=`which wget`
 GUNZIP=`which gunzip`
 TOUCH=`which touch`
-MKTEMP=`which mktemp`
+MKTEMP="`which mktemp` -t rtmarchive.XXXXXXXX"
+MKTEMPD="`which mktemp` -d -t rtmarchive.XXXXXXXX"
 CAT=`which cat`
 TAIL=`which tail`
 HEAD=`which head`
 DATE=`which date`
 TR=`which tr`
+SORT=`which sort`
 set +e
 BC=`which bc`
 if [ $? -ne 0 ]; then BC=""; fi  #bc is optional, don't display percentages/progress bar if absent
@@ -53,7 +57,11 @@ function test {
 
 function debugecho {
 	dbglevel=${2:-1}
-	if [ $DEBUG -ge $dbglevel ]; then echo -e "*** DEBUG[$dbglevel]: $1"; fi
+	if [ $DEBUG -ge $dbglevel ]; then techo "*** DEBUG[$dbglevel]: $1"; fi
+}
+
+function techo {
+	echo -e "[`date -u`][$AMDNAME]: $1" 
 }
 
 
@@ -65,7 +73,7 @@ NSET=0
 BSET=0
 USET=0
 OPTS=1
-while getopts ":dhn:b:u:" OPT; do
+while getopts ":dfhn:b:u:" OPT; do
 	case $OPT in
 		h)
 			OPTS=0  #show help
@@ -78,6 +86,9 @@ while getopts ":dhn:b:u:" OPT; do
 			AMDNAME=$OPTARG
 			NSET=1
 			OPTS=1
+			;;
+		f)
+			FORCEDL=1
 			;;
 		b)
 			if [ $BSET -ne 0 ]; then OPTS=0; fi
@@ -93,11 +104,11 @@ while getopts ":dhn:b:u:" OPT; do
 			;;
 		\?)
 			OPTS=0 #show help
-			echo "*** FATAL: Invalid argument -$OPTARG."
+			techo "*** FATAL: Invalid argument -$OPTARG."
 			;;
 		:)
 			OPTS=0 #show help
-			echo "*** FATAL: argument -$OPTARG requires parameter."
+			techo "*** FATAL: argument -$OPTARG requires parameter."
 			;;
 	esac
 done
@@ -119,20 +130,23 @@ AMDDIR=$BASEDIR/$AMDNAME
 
 #check passed parameters
 
-debugecho "Passed Parameters: AMDNAME: [$AMDNAME], URL: [$URL], BASEDIR: [$BASEDIR], DEBUG: [$DEBUG]", 2
-debugecho "Constructed Parameters: AMDDIR [$AMDDIR]", 2
+debugecho "Passed Parameters: AMDNAME: [$AMDNAME], URL: [$URL], BASEDIR: [$BASEDIR], DEBUG: [$DEBUG]" 2
+debugecho "Constructed Parameters: AMDDIR [$AMDDIR]" 2
 
 if [ -z "$AMDNAME" ]; then
-	echo -e "\e[31m***FATAL:\e[0m AMDNAME parameter not supplied. Aborting." >&2
+	techo "\e[31m***FATAL:\e[0m AMDNAME parameter not supplied. Aborting." >&2
 	exit 1
 fi
 
 if [ -z "$URL" ]; then
-        echo -e "\e[31m***FATAL:\e[0m URL parameter not supplied. Aborting." >&2
-        exit 1
+	techo "\e[31m***FATAL:\e[0m URL parameter not supplied. Aborting." >&2
+	exit 1
 fi
 
-echo "Archiving AMD: $AMDNAME beginning"
+techo "AMD Archiving script"
+techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
+techo "Archiving AMD: $AMDNAME beginning"
+tstart=`date -u +%s`
 
 # check if data folder exists, create if needed.
 if [ ! -d "$AMDDIR" ]; then
@@ -142,7 +156,7 @@ fi
 
 # check access to data folder
 if [ ! -w "$AMDDIR" ]; then
-	echo -e "\e[31m***FATAL:\e[0m Cannot write to $AMDDIR. Aborting." >&2
+	techo -e "\e[31m***FATAL:\e[0m Cannot write to $AMDDIR. Aborting." >&2
 	exit 1
 fi
 
@@ -152,152 +166,177 @@ if [ ! -r "$AMDDIR/prevdir.lst" ]; then
 	echo "newfile" > "$AMDDIR/prevdir.lst"
 fi
 
-# check for existing current data file list (there shouldn't be one if the script works, remove it)
+# check for existing current data file list (there shouldn't be one if the script finished last time, remove it)
 if [ -f "$AMDDIR/currdir.lst" ]; then
 	debugecho "Found stale currdir.lst. Removing it."
 	rm -f "$AMDDIR/currdir.lst"
 fi
 
-# Get data file listing from AMD, try 3 times, abort (FATAL) if failed
-fail=0
+
+#get data file listing and version info from AMD
 tmpfile=`$MKTEMP`
-for i in 1 2 3; do
-	set +e +x
-	$WGET --quiet --no-check-certificate -O "$tmpfile" $URL/RtmDataServlet?cmd=zip_dir
-	if [ $? -ne 0 ]; then
-		echo -e "\e[33m***WARNING:\e[0m Can not download directory listing from AMD: $AMDNAME try: ${i}" >&2
-		fail=$((fail + 1))
-	else
-		#$CAT "$tmpfile" | $GUNZIP -q -c > "$AMDDIR/currdir.lst"
-		$GUNZIP -q -c "$tmpfile" > "$AMDDIR/currdir.lst"
-		break
-	fi
-	set -e -x
-done
+tmpfile2=`$MKTEMP`
+tmpfile3=`$MKTEMP`
+set +e
+EC=`curl --insecure --silent --retry 3 --basic -o $tmpfile $URL/RtmDataServlet?cmd=zip_dir -o $tmpfile2 $URL/RtmDataServlet?cmd=version -o $tmpfile3 $URL/RtmConfigServlet?cfg_oper=get_cfg_dir`
+RC=$?
+set -e
+debugecho "curl result RC: [$RC], EC: [$EC]" 2
+if [ $RC -ne 0 ]; then techo "\e[31m***FATAL:\e[0m Could not download directory listing from AMD: [$AMDNAME] using URL: [$URL] Aborting." >&2 ; exit 1; fi
+
+
+#unzip, filter, and sort (by timestamp) all the interval data files
+$GUNZIP -q -c "$tmpfile" | grep -oE '[a-z0-9A-Z%\-\ _]+_[0-9a-f]{8}_[a-f0-9]+_[tb][_0-9a-z]*' | $SORT -t "_" -k 2d,3 -k 1d,2 > "$AMDDIR/currdir.lst"
+RC=$?
+if [ $RC -ne 0 ]; then techo "\e[31m***FATAL:\e[0m Could not process directory listing from AMD: [$AMDNAME] using data: [$tmpfile] Aborting." >&2 ; exit 1; fi
 rm -f "$tmpfile"
-if [ $fail -ne 0 ]; then echo -e "\e[31m***FATAL:\e[0m Could not download directory listing from AMD: $AMDNAME Aborting." >&2 ; exit 1; fi
 
 
-# test for HS AMD, version commands responds with line "ng.probe=true"
-fail=0
-tmpfile=`$MKTEMP`
-for i in 1 2 3; do
-	set +e
-	$WGET --quiet --no-check-certificate -O "$tmpfile" $URL/RtmDataServlet?cmd=version
-	if [ $? -ne 0 ]; then
-		echo -e "\e[31m***FATAL:\e[0m Can not download version info from AMD: $AMDNAME try: ${i}" >&2
-		fail=$((fail + 1))
-	else
-		HSAMD=`$AWK '/ng\.probe=true/ { print "1" }' "$tmpfile"`
-		break
-	fi
-	set -e
-done
-rm -f $tmpfile
-if [ $fail -ne 0 ]; then echo -e "\e[31m***FATAL:\e[0m Could not download version info from AMD: $AMDNAME Aborting." >&2 ; exit 1; fi
-debugecho "HS AMD detected: $HSAMD"
+#determine if AMD is HS AMD or classic AMD
+HSAMD=0
+HSAMD=`$AWK '/ng\.probe=true/ { print "1" }' "$tmpfile2"`
+rm -f "$tmpfile2"
+debugecho "HSAMD: [$HSAMD]" 2
 
 
+#get config file listing
+cp -f "$tmpfile3" "$AMDDIR/confdir.lst"
+rm -f "$tmpfile3"
+
+
+
+
+# determine delta of current file list from previous and download the difference.
+if [ $FORCEDL -eq 1 ]; then techo "FORCED DOWNLOAD FLAG SET"; echo "newfile" > "$AMDDIR/prevdir.lst"; fi
+difflist=`$AWK 'NR==FNR{a[$1]++;next;}!($0 in a)' "$AMDDIR/prevdir.lst" "$AMDDIR/currdir.lst"`
+diffcount=`echo -e "$difflist" | wc -l`
+debugecho "filecount: [$diffcount]" 2
+debugecho "filelist: [$difflist]" 4
+
+tslist=`echo -e "$difflist" | grep -oE '[a-f0-9]{8}' | sort -u`
+tscount=`echo -e "$tslist" | wc -l`
+debugecho "tscount: [$tscount]" 2
+debugecho "tslist: [$tslist]" 4
+
+
+#set up some vars
 BARL=0
 BARR=0
 PERC=0
 downloaded=0
 warnings=0
+warnlist=""
+tcount=0
 count=0
 
-# determine delta of current file list from previous and download them all.
-difflist=`$AWK 'NR==FNR{a[$1]++;next;}!($0 in a)' "$AMDDIR/prevdir.lst" "$AMDDIR/currdir.lst"`
-diffcount=`echo -e "$difflist" | wc -l`
-debugecho "filecount: [$diffcount]", 2
-debugecho "filelist: [$difflist]", 3
-while read -r p; do
 
-	count=$((count+1))
-	if ! (( count % $DISPCOUNT )) ; then 		#status update every DISPCOUNT files
-		if [ ! "$BC" == "" ]; then		
-			# figure out percentage
-			PERC=0$($BC -l <<<  "(($count/$diffcount) * 100); " ); PERC=${PERC%.*}; PERC=${PERC#0}; if [ "$PERC" == "" ]; then PERC=0; fi
-			# figure out progress bar length
-			BARL=0$($BC -l <<<  "(((($count/$diffcount) * $DISPCOLS)) / $DISPCOLS) * $DISPCOLS; "); BARL=${BARL%.*}; BARL=${BARL#0}; if [ "$BARL" == "" ]; then BARL=0; fi
-			# figure out progress bar blank length
-			BARR=$((DISPCOLS - BARL)); if [[ $BARR -lt 1 ]]; then BARR=0; fi
-			echo -e "Processed files from AMD: $AMDNAME $count/$diffcount $PERC%" 
-			echo -e "[`$HEAD -c $BARL < /dev/zero | $TR '\0' '#' ``$HEAD -c $BARR < /dev/zero | $TR '\0' ' '`] $PERC%"
-		else
-			echo -e "Processed files from AMD: $AMDNAME $count/$diffcount" 
-		fi
-		debugecho "count: [$count], diffcount: [$diffcount], PERC: [$PERC], BARL: [$BARL], BARR: [$BARR], COLUMNS: [$DISPCOLS]", 2
+#loop through timestamps
+while read -r ts; do
+	#per timestamp
+	tcount=$((tcount+1))
+
+
+	#progress display
+	if [ ! "$BC" == "" ]; then		
+		# figure out percentages of progress
+		PERC=0$($BC -l <<<  "(($count/$diffcount) * 100); " ); PERC=${PERC%.*}; PERC=${PERC#0}; if [ "$PERC" == "" ]; then PERC=0; fi
+		PERC2=0$($BC -l <<<  "(($tcount/$tscount) * 100); " ); PERC2=${PERC2%.*}; PERC2=${PERC2#0}; if [ "$PERC2" == "" ]; then PERC2=0; fi
+		# figure out progress bar length
+		BARL=0$($BC -l <<<  "(((($count/$diffcount) * $DISPCOLS)) / $DISPCOLS) * $DISPCOLS; "); BARL=${BARL%.*}; BARL=${BARL#0}; if [ "$BARL" == "" ]; then BARL=0; fi
+		# figure out progress bar blank length
+		BARR=$((DISPCOLS - BARL)); if [[ $BARR -lt 1 ]]; then BARR=0; fi
+		techo "Processed files: $count/$diffcount $PERC%" 
+		techo "Processed intervals: $tcount/$tscount $PERC2%" 
+		techo "[`$HEAD -c $BARL < /dev/zero | $TR '\0' '#' ``$HEAD -c $BARR < /dev/zero | $TR '\0' ' '`] $PERC%"
+	else
+		techo "Processed files: $count/$diffcount" 
+		techo "Processed intervals: $tcount/$tscount" 
+	fi
+	debugecho "count: [$count], diffcount: [$diffcount], PERC: [$PERC], BARL: [$BARL], BARR: [$BARR], COLUMNS: [$DISPCOLS], tcount [$tcount], tscount: [$tscount], PERC2: [$PERC2]" 2
+
+
+	#figure out date to create directory
+	year=`TZ=UTC; printf "%(%Y)T" 0x$ts`
+	month=`TZ=UTC; printf "%(%m)T" 0x$ts`
+	day=`TZ=UTC; printf "%(%d)T" 0x$ts`
+	#timestamp to correct time on downloaded files
+	FTS=`TZ=UTC; printf "%(%Y%m%d%H%M)T.%(%S)T" 0x$ts`
+	debugecho "FTS: [$FTS]" 2
+
+	# Check for correct directory structure - create if needed
+	ARCDIR="$AMDDIR/$year/$month/$day/"
+	debugecho "ARCDIR: [$ARCDIR]" 2
+	if [ ! -d "$ARCDIR" ]; then
+		debugecho "Creating archive directory: $ARCDIR"
+		mkdir -p "$ARCDIR"
+	fi
+	if [ ! -w "$ARCDIR" ]; then
+		techo "\e[31m***FATAL:\e[0m Can't write to archive directory: [$ARCDIR]"
+		exit 1
 	fi
 
-	# Validate file name is something we want.
-	if [ "`echo "${p}" | $AWK ' /[a-z0-9]+_[0-9a-f]+_[150a]+_[tb].*/ '`" == "${p}" ]; then
-	 	# Extract date codes from file name	- OPTIMISE THIS
-		#year=`echo "${p}" | $AWK -F"_" ' { print strftime("%Y",strtonum("0x"$2),1); } '`
-		#month=`echo "${p}" | $AWK -F"_" ' { print strftime("%m",strtonum("0x"$2),1); } '`
-		#day=`echo "${p}" | $AWK -F"_" ' { print strftime("%d",strtonum("0x"$2),1); } '`
-		ts=`echo "${p}" | $AWK -F"_" ' { print "0x"$2; } '`
-		year=`TZ=UTC; printf "%(%Y)T" $ts`
-		month=`TZ=UTC; printf "%(%m)T" $ts`
-		day=`TZ=UTC; printf "%(%d)T" $ts`
-		#debugecho "${file},$year,$month,$day"
-		# Check for correct folder structure - create if needed
-		ARCDIR="$AMDDIR/$year/$month/$day/"
-		if [ ! -w "$ARCDIR" ]; then
-			debugecho "Creating archive directory: $ARCDIR"
-			mkdir -p "$ARCDIR"
+
+	#build download list
+	dllist=""
+	tmpdir=`$MKTEMPD`
+	debugecho "tmpdir: [$tmpdir]" 3
+	filelist=`echo -e "$difflist" | grep -E "_${ts}_"`
+	while read -r p; do	
+
+		if [ -r "$ARCDIR/$p" ] && [ ! $FORCEDL -eq 1 ]; then		#if file already exists and forced download flag unset, skip downloading it. 
+			count=$((count+1))
+			debugecho "Skipping exiting file ${p}" 2
+			continue	# already exists skip downloading
 		fi
+
+		tmpfile="$tmpdir/$p"
+		#debugecho "tmpfile: [$tmpfile]" 3
+		dllist="$dllist -o $tmpfile ${URL}RtmDataServlet?cmd=zip_entry&entry=${p} "
+		
+	done < <(echo -e "$filelist")		#files per timestamp
+	if [ "$dllist" == "" ]; then rm -rf "$tmpdir"; continue; fi		#skip altogether if we've got nothing to download
+	debugecho "dllist: [$dllist]" 4
+
+
+	#download
+	set +e
+	EC=`curl --insecure --silent --retry 3 --basic ${dllist}`
+	RC=$?
+	set -e
+	debugecho "curl result RC: [$RC], EC: [$EC]" 2
+	#error handling TBD
+
+
+	#process
+	while read -r p; do
 		file="$ARCDIR/${p}"
+		count=$((count+1))
 
-		filelist="${p}"
-		debugecho "filelist: $filelist", 3
+		if [ ! -f "$tmpdir/$p" ]; then
+			debugecho "***WARNING: File: [$p] not downloaded from AMD [$AMDNAME]"
+			warnings=$((warnings+1))
+			warnlist="$warnlist\n$p"
+			continue
+		fi
+		
+		if [ -f "$file" ] && [ ! -w "$file" ]; then chmod +w "$file"; fi		#file read-only fix that
+		set +e
+		$GUNZIP -q -c "$tmpdir/$p" > "$file"		#unzip it
+		RC=$?
+		set -e
+		if [ $RC -ne 0 ]; then debugecho "***WARNING File: [$tmpdir/$p] didn't decompress."; warnings=$((warnings+1)); warnlist="$warnlist\n$p"; continue; fi 
+		downloaded=$((downloaded + 1))
 
-		#for f in $filelist; do
-		f="$filelist"
-			file="$ARCDIR/${f}"
+		#set correct timestamp on file
+		set +e
+		`TZ=UTC; $TOUCH -c -t $FTS  "$file"`
+		set -e
 
-			if [ -r "$file" ]; then debugecho "Skipping exiting file ${f}", 2; continue; fi	# already exists skip downloading
-
-			debugecho "Downloading [${f}] from [$AMDNAME] to [$file]"
-			# Try download 3 times
-			warn=0
-			tmpfile=`$MKTEMP`
-			for i in 1 2 3 ; do
-				set +e
-				$WGET --quiet --no-check-certificate -O "$tmpfile" $URL/RtmDataServlet?cmd=zip_entry\&entry=${f}
-				if [ $? -ne 0 ]; then
-					warn=$((warn + 1))
-			    		debugecho "\e[33m*** WARNING:\e[39m Can not download file: ${f} from AMD: $AMDNAME try: ${i}" >&2
-				else
-					if [ -f "$file" ] && [ ! -w "$file" ]; then chmod +w "$file"; fi		#file read-only fix that
-					#$CAT "$tmpfile" | $GUNZIP -q -c > "$file"
-					$GUNZIP -q -c "$tmpfile" > "$file"
-					downloaded=$((downloaded + 1))
-					break
-				fi
-				set -e
-			done
-			rm -f "$tmpfile"
-			if [ $warn -ne 0 ]; then echo -e "\e[33m*** WARNING:\e[39m Could not download file: ${f} from AMD: $AMDNAME" >&2 ; warnings=$((warnings + 1)); fi
-	
-			# Set file timestamp correctly
-			# extract timestamp from file name and convert it to require format CCYYMMDDhhmm.SS
-			FTS=`echo "${f}" | $AWK -F"_" ' { print strftime("%Y%m%d%H%M.%S",strtonum("0x"$2),1); } '`
-			`TZ=UTC $TOUCH -c -t $FTS  "$file"`
-	
-			# Proces contents here
-			debugecho "HSAMD: [$HSAMD] f: [${f}]", 2
-			extract=0
-			if [[ ${f} =~ ^zdata_.*_t_vol$ ]]; then
-				extract=1
-			elif [[ ${f} =~ ^zdata_.*_t$ ]]; then
-				extract=2
-			else
-				extract=0
-			fi 
-			debugecho "extract: [$extract]", 2
-			if [ $extract -ne 0 ] && [ -r "$file" ]; then
+		# Extract AMD UUID
+		if [[ ${p} =~ ^zdata_.*_t_vol$ ]] || [[ ${p} =~ ^zdata_.*_t$ ]] ; then		#found in zdata files
+			if [ -r "$file" ]; then
 				# get UUID from zdata, use to check if the AMD changes unexpectedly.
-				debugecho "Extracting UUID from zdata file: ${f}"
+				debugecho "Extracting UUID from zdata file: ${p}"
 				UUID=`$AWK -F" " '$1=="#AmdUUID:" { print $2 }' "$file"`
 				if [ ! -f "$AMDDIR/uuid.lst" ]; then
 					echo "$UUID" > "$AMDDIR/uuid.lst"
@@ -306,17 +345,20 @@ while read -r p; do
 						OLDUUID=${k}
 					done < "$AMDDIR/uuid.lst"
 					if [ ! "$OLDUUID" == "$UUID" ]; then
-						echo -e "\e[33m*** WARNING:\e[39m UUID Mismatch on AMD: $AMDNAME, Old: $OLDUUID, New: $UUID" >&2
-						echo -e "\e[33m*** WARNING:\e[39m If this is expected remove file $AMDDIR/uuid.lst to clear the error" >&2
+						techo "\e[33m*** WARNING:\e[39m UUID Mismatch on AMD: $AMDNAME, Old: $OLDUUID, New: $UUID" >&2
+						techo "\e[33m*** WARNING:\e[39m If this is expected remove file $AMDDIR/uuid.lst to clear the error" >&2
 					fi
 				fi
 			fi
-		#done
-	else
-		debugecho "\e[33m*** WARNING:\e[39m Unknown file: ${p} on AMD: $AMDNAME" >&2
-	fi
+		fi 
 
-done < <(echo -e "$difflist")
+	done < <(echo -e "$filelist")		#files per timestamp
+
+
+	#clean up tmpdir
+	rm -rf "$tmpdir"
+done < <(echo -e "$tslist")		#timestamp list
+techo "Completed downloading interval data for [$AMDNAME]"
 
 
 # finally, make the current dir list the previous one.
@@ -324,85 +366,99 @@ rm -f "$AMDDIR/prevdir.lst"
 mv "$AMDDIR/currdir.lst" "$AMDDIR/prevdir.lst"
 
 
+# get AMD config
+if [ $GETCONF ]; then
+	techo "Archiving AMD Config: $AMDNAME"
 
+	ARCDIR="$ARCDIR/conf"
+	if [ ! -d "$ARCDIR" ]; then
+		debugecho "Creating config archive directory: $ARCDIR"
+		mkdir -p "$ARCDIR"
+	fi	
+	if [ ! -w "$ARCDIR" ]; then
+		debugecho "Setting permissions on config archive directory: $ARCDIR"
+		chmod 664 "$ARCDIR"
+	fi
 
+	#build download command
+	dllist=""
+	tmpdir=`$MKTEMPD`
+	while read -r p q; do
 
-# get config
-echo -e "Archiving AMD Config: $AMDNAME"
-# Get config file listing from AMD, try 3 times, abort (FATAL) if failed
-fail=0
-tmpfile=`$MKTEMP`
-for i in 1 2 3; do
+		if [ "$p" == "0" ]; then continue; fi		#amd sends a '0' as first line of config list. ignore it
+
+		tmpfile="$tmpdir/$p"
+		dllist="$dllist -o $tmpfile ${URL}RtmConfigServlet?cfg_oper=console_get&cfg_file=$p"
+
+	done < <($CAT "$AMDDIR/confdir.lst")  
+	debugecho "dllist: [$dllist]" 4
+
+	#download
 	set +e
-	$WGET --quiet --no-check-certificate -O "$tmpfile" $URL/RtmConfigServlet?cfg_oper=get_cfg_dir
-	if [ $? -ne 0 ]; then
-		echo -e "\e[33m*** WARNING:\e[0m Can not download config directory listing from AMD: $AMDNAME try: ${i}" >&2
-		fail=$((fail + 1))
-	else
-		#$CAT $tmpfile > $AMDDIR/confdir.lst
-		cp -f "$tmpfile" "$AMDDIR/confdir.lst"
-		break
-	fi
+	EC=`curl --insecure --silent --retry 3 --basic ${dllist}`
+	RC=$?
 	set -e
-done
-rm -f "$tmpfile"
-if [ $fail -ne 0 ]; then echo -e "\e[31m*** FATAL:\e[0m Could not download config directory listing from AMD: $AMDNAME Aborting." >&2 ; exit 1; fi
+	debugecho "curl result RC: [$RC], EC: [$EC]" 2
+	#error handling TBD
 
-# read current file list and download them all.
-while read p; do
-	# Validate file name is something we want.
-	filesplit=(${p// /,})
-	p=$filesplit
-	if [ "$p"!="0" ]; then
-		# Check for correct folder structure - create if needed
-		ARCDIR=$AMDDIR/$year/$month/$day/conf
-		if [ ! -w "$ARCDIR" ]; then
-			debugecho "Creating config archive directory: $ARCDIR"
-			mkdir -p "$ARCDIR"
-		fi
+	#process config files
+	ccount=0
+	while read -r p q; do
+
+		if [ "$p" == "0" ]; then continue; fi		#amd sends a '0' as first line of config list. ignore it
+
+		ccount=$((ccount+1))
+		debugecho "Downloading config file [$p]" 2
+		#prep vars
+		tmpfile="$tmpdir/$p"
 		file="$ARCDIR/$p"
-		
-		#if [ -r "$file" ]; then continue; fi    # already exists skip downloading
-		
-		debugecho "Downloading $p from $AMDNAME to $file"
-		# Try download 3 times
-		warn=0
-		tmpfile=`$MKTEMP`
-		TS=""
-		FTS=""
-		for i in 1 2 3 ; do
-			set +e
-			$WGET --quiet --no-check-certificate -O "$tmpfile" $URL/RtmConfigServlet?cfg_oper=console_get\&cfg_file=$p
-			if [ $? -ne 0 ]; then
-				warn=$((warn + 1))
-				debugecho "\e[33m*** WARNING:\e[39m Can not download config file: $p from AMD: $AMDNAME try: ${i}" >&2
-				echo -e "127\n" > $file
-				FTS=`TZ=UTC $DATE -u -d @127 +%Y%m%d%H%M.%S`
-				`TZ=UTC $TOUCH -c -t $FTS "$file"`
-			else
-				downloaded=$((downloaded + 1))
-				if [ ! -w $file ]; then chmod +w $file; fi		#file read-only fix that
-				$CAT $tmpfile | $GUNZIP -q -c > $file
-				TS=`$CAT $file | $HEAD -n 1`
-				TS=$((TS / 1000))
-				FTS=`TZ=UTC $DATE -u -d @$TS +%Y%m%d%H%M.%S`
-				`TZ=UTC $TOUCH -c -t $FTS  "$file"`
-				break
-			fi
-			set -e
-		done
-		rm -f "$tmpfile"
-																		 
-		#if [ $warn -ne 0 ]; then echo -e "\e[33m*** WARNING:\e[39m Could not download config file: $p from AMD: $AMDNAME" >&2 ; warnings=$((warnings + 1)); fi
-	else
-		debugecho "\e[33m*** WARNING:\e[39m Unknown config file: $p on AMD: $AMDNAME" >&2
-	fi
-done < <($CAT "$AMDDIR/confdir.lst")
+
+		#file checks
+		if [ ! -f "$tmpfile" ]; then
+			#debugecho "Couldn't download config file [$p] from AMD [$AMDNAME]" 2
+			#warnings=$((warnings+1))
+			#warnlist="$warnlist\n$p"
+			continue
+		fi
+		if [ -f "$file" ] && [ ! -w "$file" ]; then
+			chmod 664 "$file"
+		fi
+
+		#unzip file
+		set +e
+		$GUNZIP -q -c "$tmpfile" > "$file"
+		RC=$?
+		set -e
+		if [ $RC -ne 0 ]; then 
+			#debugecho "Couldn't decompress config file [$tmpfile] from AMD [$AMDNAME]" 2
+			#warnings=$((warnings+1))
+			#warnlist="$warnlist\n$p"
+			continue
+		fi
+
+		#get timestamp from first line of file
+		TS=`$HEAD -n 1 "$file"`
+		TS=$((TS / 1000))
+		FTS=`TZ=UTC $DATE -u -d @$TS +%Y%m%d%H%M.%S`
+
+		#set file timestamp to match
+		`TZ=UTC $TOUCH -c -t $FTS "$file"`
+	done < <($CAT "$AMDDIR/confdir.lst")  
 
 
+	#clean up tempdir
+	rm -rf "$tmpdir"
+
+	techo "Completed downloading config data for [$AMDNAME]"
+
+fi
 
 
-echo -ne "Archiving AMD: $AMDNAME complete, downloaded $downloaded"
-if [ $warnings -ne 0 ]; then echo -e " - \e[33mWarnings: $warnings\e[0m"; fi
-echo -e ""
+#output results
+tfinish=`date -u +%s`
+tdur=$((tfinish-tstart))
+techo "Archiving AMD: $AMDNAME complete, downloaded $downloaded files in $tcount intervals"
+if [ $ccount -gt 0 ]; then techo "Downloaded $ccount config files"; fi
+if [ $warnings -ne 0 ]; then techo "\e[33mWarnings: $warnings\e[0m"; debugecho "Files with warnings: $warnlist"; fi
+techo "Completed in $tdur seconds"
 

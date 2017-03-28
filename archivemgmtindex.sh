@@ -32,7 +32,7 @@ while getopts ":dhfb:" OPT; do
 			OPTS=0  #show help
 			;;
 		d)
-			DEBUG=1
+			DEBUG=$((DEBUG + 1))
 			;;
 		f)
 			FORCEINDEX=1
@@ -42,11 +42,11 @@ while getopts ":dhfb:" OPT; do
 			;;
 		\?)
 			OPTS=0 #show help
-			echo "*** FATAL: Invalid argument -$OPTARG."
+			techo "*** FATAL: Invalid argument -$OPTARG."
 			;;
 		:)
 			OPTS=0 #show help
-			echo "*** FATAL: argument -$OPTARG requires parameter."
+			techo "*** FATAL: argument -$OPTARG requires parameter."
 			;;
 	esac
 done
@@ -61,11 +61,18 @@ fi
 
 
 function debugecho {
-	if [ $DEBUG -ne 0 ]; then echo -e "$@"; fi
+	dbglevel=${2:-1}
+	if [ $DEBUG -ge $dbglevel ]; then techo "*** DEBUG[$dbglevel]: $1"; fi
 }
 
-echo -e "rtmarchive Archive Search Indexer Script"
-echo -e "Starting"
+function techo {
+	echo -e "[`date -u`]: $1" 
+}
+
+tstart=`date -u +%s`
+techo "rtmarchive Archive Search Indexer Script"
+techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
+techo "Starting"
 
 #determine yesterday (UTC)
 today=$($DATE -u +"%s")
@@ -74,32 +81,43 @@ tgtyear=$($DATE -u -d "@$yesterday" +"%Y")
 tgtmonth=$($DATE -u -d "@$yesterday" +"%m")
 tgtday=$($DATE -u -d "@$yesterday" +"%d")
 
+amds=0
+years=0
+months=0
+days=0
+files=0
+
 #list contents of BASEDIR for 
 for AMD in "$BASEDIR"/*; do
-	#while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
-	#(
+	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
+	(
 	    # only interested if it has got AMD data in it
 	    if [ ! -r "$AMD/prevdir.lst" ]; then continue; fi
+		amds=$((amds+1))
 	    AMDNAME=`echo $AMD | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `
-	    echo -e "Processing AMD: $AMDNAME"
+	    techo "Processing AMD: $AMDNAME"
 
 		# recurse year/month/day directory structure
 	    for YEAR in "$AMD"/*; do
 	        if [ ! -d "$YEAR" ]; then continue; fi
 			if [ ! $FORCEINDEX ] && [ ! $YEAR == $AMD"/"$tgtyear ]; then continue; fi
+			years=$((years+1))
 	        for MONTH in "$YEAR"/*; do
 				if [ ! -d "$MONTH" ]; then continue; fi
 				if [ ! $FORCEINDEX ] && [ ! $MONTH == $YEAR"/"$tgtmonth ]; then continue; fi
+				months=$((months+1))
 				for DAY in "$MONTH"/*;  do
 					if [ ! -d "$DAY" ]; then continue; fi
 					if [ ! $FORCEINDEX ] && [ ! $DAY == $MONTH"/"$tgtday ]; then continue; fi
-					debugecho "***DEBUG: Processing directory $DAY"
+					days=$((days+1))
+					debugecho "Processing directory $DAY"
 					# target year and month, process it
 
 					# concatenate yesterdays list files into months ones (create as needed)
 					# then de-dupe and sort list files
 					for file in timestamps.lst softwareservice.lst serverips.lst clientips.lst serverports.lst; do
 						if [ ! -r "$DAY/$file" ]; then continue; fi
+						files=$((files+1))
 						$TOUCH "$MONTH"/$file
 						$CAT "$MONTH/$file" "$DAY/$file" >> "$MONTH/$file.tmp"
 						rm -f "$MONTH"/$file
@@ -114,6 +132,7 @@ for AMD in "$BASEDIR"/*; do
 				# then de-dupe and sort list files
 				for file in timestamps.lst softwareservice.lst serverips.lst clientips.lst serverports.lst; do
 					if [ ! -r "$MONTH/$file" ]; then continue; fi
+					files=$((files+1))
 					$TOUCH "$YEAR"/$file
 					$CAT "$YEAR/$file" "$MONTH/$file" >> "$YEAR/$file.tmp"
 					rm -f "$YEAR"/$file
@@ -128,6 +147,7 @@ for AMD in "$BASEDIR"/*; do
 			# then de-dupe and sort list files
 			for file in timestamps.lst softwareservice.lst serverips.lst clientips.lst serverports.lst; do
 				if [ ! -r "$YEAR/$file" ]; then continue; fi
+				files=$((files+1))
 				$TOUCH "$AMD"/$file
 				$CAT "$AMD/$file" "$YEAR/$file" >> "$AMD/$file.tmp"
 				rm -f "$AMD"/$file
@@ -137,6 +157,12 @@ for AMD in "$BASEDIR"/*; do
 			done
 
 		done
-	#)
+	) &
+	wait
 done
+
+tfinish=`date -u +%s`
+tdur=$((tfinish-tstart))
+techo "rtmarchive Archive Search Indexer Script"
+techo "Completed $amds AMDs, $years years, $months, months, $days days, totalling $files files in $tdur seconds."
 

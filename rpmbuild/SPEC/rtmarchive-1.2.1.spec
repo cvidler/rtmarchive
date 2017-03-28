@@ -7,14 +7,14 @@
 
 Summary: A series of scripts and PHP code to archive AMD raw data for long term, and be able to present it to a CAS for re-processing. For use with Dynatrace Data Center Real User Monitoring.
 Name: rtmarchive
-Version: 1.2.0
+Version: 1.2.1
 Release: 1%{?dist}
 License: GPL
 SOURCE0 : %{name}-%{version}.tar.gz
 URL: https://github.com/cvidler/rtmarchive
 BuildArch: x86_64
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Requires: httpd >= 2.4,php >= 5.4,bash >= 4.2,curl,tar,bzip2,gawk,wget,gzip,coreutils,cronie,checkpolicy,policycoreutils,policycoreutils-python
+Requires: httpd >= 2.4,php >= 5.4,bash >= 4.2,curl,tar,bzip2,gawk,wget,gzip,coreutils,cronie,checkpolicy,policycoreutils,policycoreutils-python,vim-common
 Requires(pre): shadow-utils,glibc-common
 Requires(postun): shadow-utils
 
@@ -108,6 +108,8 @@ rm -rf %{buildroot}
 
 
 %changelog
+* Tue Mar 21 2017  Chris Vidler <christopher.vidler@dynatrace.com> 1.2.1-0
+- fixes to support DCRUM 2017, speed optimisations, edge case bug fixes
 * Thu Aug 11 2016  Chris Vidler <christopher.vidler@dynatrace.com> 1.2.0-1
 - Numerous bug fixes, additional debgging, and exception handling.
 - Proper support for the ever changing RUM Console formats.
