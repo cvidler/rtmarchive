@@ -15,6 +15,7 @@
 #config 
 RUMCCONF=/etc/rumc.cfg
 AMDLIST=/etc/amdlist.cfg
+SCRIPTDIR=/opt/rtmarchive
 DEBUG=0
 
 
@@ -164,7 +165,7 @@ while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
 	if [ "$XML" == "" ]; then techo "\e[33m***WARNING:\e[0m RUM Console '$RUMNAME' on $RUMPROT://$RUMADDR:$RUMPORT/ not responding/bad logon/etc."; continue; fi
 
 	techo "Parsing response from RUM Console...."
-	PARSED=`echo -e $XML | $XSLTPROC --nonet rumcquery.xslt -`
+	PARSED=`echo -e $XML | $XSLTPROC --nonet $SCRIPTDIR/rumcquery.xslt -`
 
 	#test for empty result - probably bad/unknown data from RUMC
 	if [ "$PARSED" == "" ]; then
