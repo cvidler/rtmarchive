@@ -47,15 +47,22 @@ Called nightly from cron, takes produced data lists, and aggregates/indexes them
 Accepts one parameter, if a single 1 is passed, debug output is produced.
 
 `queryrumc.sh`
-Called nightly from cron, takes /etc/rumc.cfg file, and queries each RUM Console instance listed producing a list of AMDs writes to /etc/amdlist.cfg for use by rtmarchive.sh
+Called nightly from cron, takes /etc/rumc.cfg (override with -c) file, and queries each RUM Console instance listed producing a list of AMDs writes to /etc/amdlist.cfg (overide with -a) for use by rtmarchive.sh
 Works in two modes, normally:
 
-accepts two parameters, a binary 0|1 whether to update /etc/amdlist.cfg or not, another binary 0|1 for debug output.
+Accepts the following  parameters, 
 
-Password encodig mode:
+-u to update /etc/amdlist.cfg (otherwise a test occurs no changes to amdlist.cfg are made).
 
-accepts four parameters, 0 to not update cfg file, 0 for no debug output, -e to enable password encoding, and finally the password to encode.
-The encoded password is used to add entries to the /etc/rumc.cfg file.
+-a path change the default location for the amd list config file.
+
+-c path change the default location for the rum console config file. 
+
+-h show syntax help.
+
+Password encoding mode:
+
+accepts mandatory single parameter -e, which then runs interactively to input a password to encode, once encoded the hex value used to add entries to the /etc/rumc.cfg file.
 
 `rumcquery.xslt`
 Required by `queryrumc.sh` to pre-process (using xsltproc) the returned data from RUM Console.
