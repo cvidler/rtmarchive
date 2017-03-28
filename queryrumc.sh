@@ -39,7 +39,7 @@ CURL=`which curl`
 ENCODE=0
 UPDATELIST=0
 OPTS=1
-while getopts ":uhde:c:a:" OPT; do
+while getopts ":uhdec:a:" OPT; do
 	case $OPT in
 		u)
 			UPDATELIST=1
@@ -54,7 +54,6 @@ while getopts ":uhde:c:a:" OPT; do
 		e)
 			OPTS=1
 			ENCODE=-e
-			EPASS=$OPTARG
 			;;
 		c)
 			RUMCCONF=$OPTARG
@@ -74,13 +73,13 @@ while getopts ":uhde:c:a:" OPT; do
 done
 
 if [ $OPTS -eq 0 ]; then
-	echo -e "*** INFO: Usage: $0 [-h] [-u] [-a amdlist] [-c rumcconfig] [-e password]"
+	echo -e "*** INFO: Usage: $0 [-h] [-u] [-a amdlist] [-c rumcconfig] [-e]"
 	echo -e "-h This help"
 	echo -e "-u Update AMD list"
 	echo -e "-a Full path to amdlist file, default $AMDLIST"
 	echo -e "-c Full path to rumcconfig file, default $RUMCCONF"
 	echo -e ""
-	echo -e "-e password Encode a RUMC password"
+	echo -e "-e Encode a RUMC password"
 	exit 0
 fi
 
@@ -105,6 +104,21 @@ function rumpassword {
 	echo "`echo $@ | $OPENSSL enc -aes-128-ecb -e -K $RUMKEY | $XXD -p`"
 }
 
+function read_password {
+	unset password
+	prompt=${1:-"Password: "}
+	while IFS= read -p "$prompt" -r -s -n 1 char
+	do
+		if [[ $char == $'\0' ]]
+		then
+		    break
+		fi
+		prompt='*'
+		password+="$char"
+	done
+	echo "$password"
+}
+
 urlencode() {
 	# urlencode <string>
 	
@@ -124,8 +138,18 @@ techo "rtmarchive System: RUM Console AMD Query script"
 techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
 
 if [ $ENCODE == "-e" ]; then 
-	techo "Encoded password: $(rumpassword $EPASS)" 
-	exit 0
+	EPASS=$(read_password "Enter password:   ")
+	echo -e ""
+	EPASS2=$(read_password "Confirm password: ")
+	echo -e ""
+	if [ "$EPASS" == "$EPASS2" ]; then
+		debugecho "[$EPASS]"
+		techo "Encoded password: $(rumpassword $EPASS)" 
+		exit 0
+	else
+		techo "Passwords don't match, aborting."
+		exit 1
+	fi
 fi
 
 
