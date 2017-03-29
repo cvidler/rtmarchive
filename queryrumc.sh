@@ -37,9 +37,10 @@ CURL=`which curl`
 
 #command line parameters
 ENCODE=0
+DECODE=0
 UPDATELIST=0
 OPTS=1
-while getopts ":uhdec:a:" OPT; do
+while getopts ":uhdec:a:z:" OPT; do
 	case $OPT in
 		u)
 			UPDATELIST=1
@@ -60,6 +61,10 @@ while getopts ":uhdec:a:" OPT; do
 			;;
 		a)
 			AMDLIST=$OPTARG
+			;;
+		z)
+			ENCPASS=$OPTARG
+			DECODE=-z
 			;;
 		\?)
 			OPTS=0 #show help
@@ -119,15 +124,15 @@ function read_password {
 	echo "$password"
 }
 
-urlencode() {
+function urlencode {
 	# urlencode <string>
-	
+	IFS=
 	length="${#1}"
 	for (( i = 0; i < length; i++ )); do
 		local c="${1:i:1}"
 		case $c in
 			[a-zA-Z0-9.~_-]) printf "$c" ;;
-		*) printf '%s' "$c" | xxd -p -c1 |
+		*) printf '%s' "$c" | $XXD -p -c1 |
 			while read c; do printf '%%%s' "$c"; done ;;
 		esac
 	done
@@ -138,18 +143,29 @@ techo "rtmarchive System: RUM Console AMD Query script"
 techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
 
 if [ $ENCODE == "-e" ]; then 
+	IFS=
 	EPASS=$(read_password "Enter password:   ")
 	echo -e ""
 	EPASS2=$(read_password "Confirm password: ")
 	echo -e ""
 	if [ "$EPASS" == "$EPASS2" ]; then
 		debugecho "[$EPASS]"
-		techo "Encoded password: $(rumpassword $EPASS)" 
+		ENCPASS=$(rumpassword $EPASS)
+		techo "Encoded password: $ENCPASS"
+		DPASS=$(derumpassword $ENCPASS)
+		debugecho "Decoded password: [$DPASS]"
+		if [ ! "$DPASS" == "$EPASS" ]; then techo "*** FAILURE: Password encoding failed, input password [$EPASS] doesn't match decoded password [$DPASS]."; exit 1; fi
 		exit 0
 	else
 		techo "Passwords don't match, aborting."
 		exit 1
 	fi
+fi
+
+if [ $DECODE == "-z" ]; then
+	IFS=
+	echo -E "Decoded password in [] brackets: [$(derumpassword $ENCPASS)]"
+	exit 0
 fi
 
 
@@ -179,9 +195,7 @@ while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
 	#query RUMC
 	techo "Connecting to RUM Console $RUMNAME on: $RUMPROT://$RUMADDR:$RUMPORT/"
 	#query RUMC server for XML data of all devices
-	#XML=`wget --no-check-certificate -q --header="Accept: application/xml" -O - --user '$RUMUSER' --password '$RUMPASS' $RUMPROT://$RUMADDR:$RUMPORT/cxf/rest/backup`
 	set +e
-	#XML=`$WGET --no-check-certificate -q --header="Accept: application/xml" -O - --user "$RUMUSER" --password "$RUMPASS" $RUMPROT://$RUMADDR:$RUMPORT/cxf/rest/backup`
 	XML=`$CURL --insecure --silent --header "Accept: application/xml" -u $RUMUSER:$RUMPASS $RUMPROT://$RUMADDR:$RUMPORT/cxf/rest/backup -o -`
 	if [ $? -ne 0 ]; then techo "\e[33m***WARNING:\e[0m RUM Console '$RUMNAME' on $RUMPROT://$RUMADDR:$RUMPORT/ not responding/bad logon/etc." ; continue; fi
 	set -e
@@ -190,6 +204,7 @@ while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
 
 	techo "Parsing response from RUM Console...."
 	PARSED=`echo -e $XML | $XSLTPROC --nonet $SCRIPTDIR/rumcquery.xslt -`
+	if [ $? -ne 0 ]; then techo "\e[31m***FATAL:\e[0m RUM Console '$RUMNAME' on $RUMPROT://$RUMADDR:$RUMPORT/ returned bad or incomplete data.\nDownloaded XML: [$XML]\nParsed result: [$PARSED]"; continue; fi
 
 	#test for empty result - probably bad/unknown data from RUMC
 	if [ "$PARSED" == "" ]; then
@@ -234,10 +249,12 @@ while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
 		else 
 			b=https 
 		fi
-		d=$(derumpassword $d)
-		d=$(urlencode $d)
+		preIFS=$IFS
+		IFS=
+		d=$(urlencode $(derumpassword $d))
 		g=$(urlencode $g)
 		url=$b://$g:$d@$e:$c/
+		IFS=$preIFS
 		#check connection to AMD
 		set +e
 		RETURN=`$WGET --no-check-certificate -q --header="Accept: application/xml" -O - $url/RtmDataServlet?cmd=version`
@@ -246,16 +263,16 @@ while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
 		debugecho "AMD Version Info: $RETURN" 2
 		if [[ $RETURN == *"Emulated"* ]]; then
 			#Archive AMD, disable it.
-			echo "# AMD '$a' ($e:$c) is an archive AMD. Disabling it." | $TEE -a $AMDLIST
-			echo "D,$url,$a" | $TEE -a $AMDLIST
+			echo -E "# AMD '$a' ($e:$c) is an archive AMD. Disabling it." | $TEE -a $AMDLIST
+			echo -E "D,$url,$a" | $TEE -a $AMDLIST
 		elif [[ $RETURN == "" ]]; then
 			#AMD returned no version data? not working? disable it
 			techo "\e[33m***WARNING:\e[0m No response from AMD '$a' ($e:$c)"
-			echo "# AMD '$a' ($e:$c) returned no version info or not responding, disabling it." | $TEE -a $AMDLIST
-			echo "D,$url,$a" | $TEE -a $AMDLIST
+			echo -E "# AMD '$a' ($e:$c) returned no version info or not responding, disabling it." | $TEE -a $AMDLIST
+			echo -E "D,$url,$a" | $TEE -a $AMDLIST
 		else
-			echo "# AMD '$a' ($e:$c) version: $f active." | $TEE -a $AMDLIST
-			echo "A,$url,$a" | $TEE -a $AMDLIST
+			echo -E "# AMD '$a' ($e:$c) version: $f active." | $TEE -a $AMDLIST
+			echo -E "A,$url,$a" | $TEE -a $AMDLIST
 		fi
 		
 	done;
