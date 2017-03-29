@@ -1,7 +1,0 @@
-/var/log/rtmarchive/*.log {
-    missingok
-    notifempty
-    sharedscripts
-    delaycompress
-    endscript
-}
