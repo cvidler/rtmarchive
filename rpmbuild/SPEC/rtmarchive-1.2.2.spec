@@ -10,11 +10,11 @@ Name: rtmarchive
 Version: 1.2.1
 Release: 1%{?dist}
 License: GPL
-SOURCE0 : %{name}-%{version}.tar.gz
+SOURCE0 : %{name}-%{version}-%{release}.tar.gz
 URL: https://github.com/cvidler/rtmarchive
 BuildArch: x86_64
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Requires: httpd >= 2.4,php >= 5.4,bash >= 4.2,curl,tar,bzip2,gawk,wget,gzip,coreutils,cronie,checkpolicy,policycoreutils,policycoreutils-python,vim-common,bc
+Requires: httpd >= 2.4,php >= 5.4,bash >= 4.2,curl,tar,bzip2,gawk,wget,gzip,coreutils,cronie,checkpolicy,policycoreutils,policycoreutils-python,vim-common,bc,logrotate
 Requires(pre): shadow-utils,glibc-common
 Requires(postun): shadow-utils
 
