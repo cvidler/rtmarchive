@@ -1,7 +1,9 @@
 /var/log/rtmarchive/*.log {
+	rotate 14
+	daily
+	compress
     missingok
     notifempty
     sharedscripts
     delaycompress
-    endscript
 }
