@@ -1,7 +1,7 @@
-0 0 * * * /usr/bin/bash /opt/rtmarchive/queryrumc.sh -u 2>&1 | sed -e "s/^/$(date -Is) /" >> /var/log/rtmarchive/queryrumc.log
-5 * * * * /usr/bin/bash /opt/rtmarchive/rtmarchive.sh 2>&1 | sed -e "s/^/$(date -Is) /" >> /var/log/rtmarchive/rtmarchive.log
-55 * * * * /usr/bin/bash /opt/rtmarchive/spaceman.sh 2>&1 | sed -e "s/^/$(date -Is) /" >> /var/log/rtmarchive/spaceman.log
+0 0 * * * /usr/bin/bash /opt/rtmarchive/queryrumc.sh -u 2>&1 >> /var/log/rtmarchive/queryrumc.log
+5 * * * * /usr/bin/bash /opt/rtmarchive/rtmarchive.sh 2>&1 >> /var/log/rtmarchive/rtmarchive.log
+55 * * * * /usr/bin/bash /opt/rtmarchive/spaceman.sh 2>&1 >> /var/log/rtmarchive/spaceman.log
 CRON_TZ=UTC
-0 1 * * * /usr/bin/bash /opt/rtmarchive/archivemgmt.sh 2>&1 | sed -e "s/^/$(date -Is) /" >> /var/log/rtmarchive/archivemgmt.log
-0 3 * * * /usr/bin/bash /opt/rtmarchive/archivemgmtindex.sh 2>&1 | sed -e "s/^/$(date -Is) /" >> /var/log/rtmarchive/archiveindex.log
+0 1 * * * /usr/bin/bash /opt/rtmarchive/archivemgmt.sh 2>&1 >> /var/log/rtmarchive/archivemgmt.log
+0 3 * * * /usr/bin/bash /opt/rtmarchive/archivemgmtindex.sh 2>&1 >> /var/log/rtmarchive/archiveindex.log
 
