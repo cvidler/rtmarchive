@@ -564,9 +564,13 @@ $size = getSymbolByQuantity(get_dir_size($dir));
 echo 'Archive size: '.$size;
 
 $free = getSymbolByQuantity(disk_free_space($dir));
+$per_free = (disk_free_space($dir) / disk_total_space($dir)) * 100;
 echo " - Free space: $free ";
-printf("%.1f", (disk_free_space($dir) / disk_total_space($dir)) * 100);
+printf("%.1f", $per_free);
 echo "%";
+if ( $per_free < 10 ) {
+	echo "<font color=red size=2>LOW DISK SPACE!</red>";
+}
 ?>
 <br/><a target="_new" href="https://github.com/cvidler/rtmarchive/">Chris Vidler - Dynatrace DCRUM SME 2015</a>
 </font></p>
