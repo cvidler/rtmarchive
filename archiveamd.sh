@@ -368,7 +368,7 @@ mv "$AMDDIR/currdir.lst" "$AMDDIR/prevdir.lst"
 
 # get AMD config
 if [ $GETCONF ]; then
-	techo "Archiving AMD Config: $AMDNAME"
+	techo "Archiving AMD Config: [$AMDNAME]"
 
 	ARCDIR="$ARCDIR/conf"
 	if [ ! -d "$ARCDIR" ]; then
@@ -457,7 +457,7 @@ fi
 #output results
 tfinish=`date -u +%s`
 tdur=$((tfinish-tstart))
-techo "Archiving AMD: $AMDNAME complete, downloaded $downloaded files in $tcount intervals"
+techo "Archiving AMD: [$AMDNAME] complete, downloaded $downloaded files in $tcount intervals"
 if [ $ccount -gt 0 ]; then techo "Downloaded $ccount config files"; fi
 if [ $warnings -ne 0 ]; then techo "\e[33mWarnings: $warnings\e[0m"; debugecho "Files with warnings: $warnlist"; fi
 techo "Completed in $tdur seconds"
