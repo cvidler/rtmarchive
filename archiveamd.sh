@@ -237,7 +237,7 @@ while read -r ts; do
 
 
 	#progress display
-	if [ ! "$BC" == "" ]; then		
+	if [ ! "$BC" == "" ] && [ -t 1 ] ; then		
 		# figure out percentages of progress
 		PERC=0$($BC -l <<<  "(($count/$diffcount) * 100); " ); PERC=${PERC%.*}; PERC=${PERC#0}; if [ "$PERC" == "" ]; then PERC=0; fi
 		PERC2=0$($BC -l <<<  "(($tcount/$tscount) * 100); " ); PERC2=${PERC2%.*}; PERC2=${PERC2#0}; if [ "$PERC2" == "" ]; then PERC2=0; fi
