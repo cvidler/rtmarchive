@@ -209,7 +209,7 @@ while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
 	#test for empty result - probably bad/unknown data from RUMC
 	if [ "$PARSED" == "" ]; then
 		debugecho "No results from RUMC after XSLT parse"
-		techo "\e[33m***WARNING:\e[0m Unable to read response from RUMC."
+		techo "\e[33m***WARNING:\e[0m RUM Console '$RUMNAME' reported no AMDs."
 		continue
 	fi
 		
