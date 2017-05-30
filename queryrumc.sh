@@ -202,9 +202,11 @@ while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
 	debugecho "Returned XML: $XML" 2
 	if [ "$XML" == "" ]; then techo "\e[33m***WARNING:\e[0m RUM Console '$RUMNAME' on $RUMPROT://$RUMADDR:$RUMPORT/ not responding/bad logon/etc."; continue; fi
 
+	if [[ "$XML" == *"Unauthorized"* ]]; then techo "\e[31m***ERROR:\e[0m RUM Console '$RUMNAME' on $RUMPROT://$RUMADDR:$RUMPORT/ Incorrect logon."; continue; fi
+
 	techo "Parsing response from RUM Console...."
 	PARSED=`echo -e $XML | $XSLTPROC --nonet $SCRIPTDIR/rumcquery.xslt -`
-	if [ $? -ne 0 ]; then techo "\e[31m***FATAL:\e[0m RUM Console '$RUMNAME' on $RUMPROT://$RUMADDR:$RUMPORT/ returned bad or incomplete data.\nDownloaded XML: [$XML]\nParsed result: [$PARSED]"; continue; fi
+	if [ $? -ne 0 ]; then techo "\e[31m***ERROR:\e[0m RUM Console '$RUMNAME' on $RUMPROT://$RUMADDR:$RUMPORT/ returned bad or incomplete data.\nDownloaded XML: [$XML]\nParsed result: [$PARSED]"; continue; fi
 
 	#test for empty result - probably bad/unknown data from RUMC
 	if [ "$PARSED" == "" ]; then
