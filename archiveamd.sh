@@ -50,7 +50,7 @@ function test {
 	local status=$?
 	set -e
 	if [ $status -ne 0 ]; then
-		debugecho "\e[33m***WARNING:\e[0m Non-zero exit code $status for '$@'" >&2
+		debugecho "\e[33m***WARNING:\e[0m Non-zero exit code $status for '$@'"
 	fi
 	return $status
 }
@@ -134,12 +134,12 @@ debugecho "Passed Parameters: AMDNAME: [$AMDNAME], URL: [$URL], BASEDIR: [$BASED
 debugecho "Constructed Parameters: AMDDIR [$AMDDIR]" 2
 
 if [ -z "$AMDNAME" ]; then
-	techo "\e[31m***FATAL:\e[0m AMDNAME parameter not supplied. Aborting." >&2
+	techo "\e[31m***FATAL:\e[0m AMDNAME parameter not supplied. Aborting."
 	exit 1
 fi
 
 if [ -z "$URL" ]; then
-	techo "\e[31m***FATAL:\e[0m URL parameter not supplied. Aborting." >&2
+	techo "\e[31m***FATAL:\e[0m URL parameter not supplied. Aborting."
 	exit 1
 fi
 
@@ -156,7 +156,7 @@ fi
 
 # check access to data folder
 if [ ! -w "$AMDDIR" ]; then
-	techo -e "\e[31m***FATAL:\e[0m Cannot write to $AMDDIR. Aborting." >&2
+	techo -e "\e[31m***FATAL:\e[0m Cannot write to $AMDDIR. Aborting."
 	exit 1
 fi
 
@@ -182,13 +182,13 @@ EC=`curl --insecure --silent --retry 3 --basic -o $tmpfile $URL/RtmDataServlet?c
 RC=$?
 set -e
 debugecho "curl result RC: [$RC], EC: [$EC]" 2
-if [ $RC -ne 0 ]; then techo "\e[31m***FATAL:\e[0m Could not download directory listing from AMD: [$AMDNAME] using URL: [$URL] Aborting." >&2 ; exit 1; fi
+if [ $RC -ne 0 ]; then techo "\e[31m***FATAL:\e[0m Could not download directory listing from AMD: [$AMDNAME] using URL: [$URL] Aborting."; exit 1; fi
 
 
 #unzip, filter, and sort (by timestamp) all the interval data files
 $GUNZIP -q -c "$tmpfile" | grep -oE '[a-z0-9A-Z%\-\ _]+_[0-9a-f]{8}_[a-f0-9]+_[tb][_0-9a-z]*' | $SORT -t "_" -k 2d,3 -k 1d,2 > "$AMDDIR/currdir.lst"
 RC=$?
-if [ $RC -ne 0 ]; then techo "\e[31m***FATAL:\e[0m Could not process directory listing from AMD: [$AMDNAME] using data: [$tmpfile] Aborting." >&2 ; exit 1; fi
+if [ $RC -ne 0 ]; then techo "\e[31m***FATAL:\e[0m Could not process directory listing from AMD: [$AMDNAME] using data: [$tmpfile] Aborting."; exit 1; fi
 rm -f "$tmpfile"
 
 
@@ -345,8 +345,8 @@ while read -r ts; do
 						OLDUUID=${k}
 					done < "$AMDDIR/uuid.lst"
 					if [ ! "$OLDUUID" == "$UUID" ]; then
-						techo "\e[33m*** WARNING:\e[39m UUID Mismatch on AMD: $AMDNAME, Old: $OLDUUID, New: $UUID" >&2
-						techo "\e[33m*** WARNING:\e[39m If this is expected remove file $AMDDIR/uuid.lst to clear the error" >&2
+						techo "\e[33m*** WARNING:\e[39m UUID Mismatch on AMD: $AMDNAME, Old: $OLDUUID, New: $UUID"
+						techo "\e[33m*** WARNING:\e[39m If this is expected remove file $AMDDIR/uuid.lst to clear the error"
 					fi
 				fi
 			fi
