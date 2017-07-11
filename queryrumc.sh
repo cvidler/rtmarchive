@@ -253,7 +253,10 @@ while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
 		fi
 		preIFS=$IFS
 		IFS=
-		d=$(urlencode $(derumpassword $d))
+		d=$(derumpassword $d)
+		debugecho "d [$d]" 3
+		if [ "$d" == "" ]; then debugecho "NULL password detected for [$e:$c], aborting check"; continue; fi 
+		d=$(urlencode $d)
 		g=$(urlencode $g)
 		url=$b://$g:$d@$e:$c/
 		IFS=$preIFS
