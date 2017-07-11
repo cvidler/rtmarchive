@@ -64,13 +64,18 @@ foreach ($amds->getAMDsReturn as $amd) {
 	echo "\n";
 }
 
+//create new amd dataset
 $testdata = new setamds;
+// add two new 'fake' amds.
 $testdata->probes[] = new probedata("test",true,"10.1.1.1","rtm",9091,false,0,0,NULL,0,NULL,NULL,73,0,"user1","pass1");
 $testdata->probes[] = new probedata("test2",true,"10.2.2.2");
 
+// dump out dataset to check format
 var_dump($testdata);
 
+// run soap command to publish amds to CAS
 $response = $client->SetAMDs($testdata);
+// examine result
 var_dump($response);
 
 ?>
