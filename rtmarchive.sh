@@ -111,19 +111,18 @@ DODEBUG=""
 amds=0
 AAMDS=`$AWK -F"," '$1=="A" { print $3","$2 } ' $AMDLIST`
 debugecho "AAMDS: [$AAMDS]" 2
+if [ $DEBUG -ne 0 ]; then DODEBUG=-`$HEAD -c $DEBUG < /dev/zero | $TR '\0' 'd' `; fi
 while IFS=$',' read -r p q; do
 	debugecho "p: [$p] q: [$q]" 2
 	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
 	amds=$((amds+1))
 	(
 		techo "Launching amdarchive script for: ${p}"
-		if [ $DEBUG -ne 0 ]; then DODEBUG=-`$HEAD -c $DEBUG < /dev/zero | $TR '\0' 'd' `; fi
-		RUNCMD="$SCRIPTDIR/archiveamd.sh -n \"${p}\" -u \"${q}\" -b \"$BASEDIR\" $DODEBUG &"
+		RUNCMD="$SCRIPTDIR/archiveamd.sh -n \"${p}\" -u \"${q}\" -b \"$BASEDIR\" $DODEBUG"
 		debugecho "RUNCMD: $RUNCMD"
-		$SCRIPTDIR/archiveamd.sh -n "${p}" -u "${q}" -b "$BASEDIR" $DODEBUG &
-		wait;
-	)
-done < <(echo "$AAMDS")
+		$SCRIPTDIR/archiveamd.sh -n "${p}" -u "${q}" -b "$BASEDIR" $DODEBUG 
+	) &
+done < <(echo "$AAMDS") ; wait
 
 rm -f $PIDFILE
 
