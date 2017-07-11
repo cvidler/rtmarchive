@@ -262,7 +262,8 @@ while read RUMNAME RUMPROT RUMADDR RUMPORT RUMUSER RUMHASH; do
 		IFS=$preIFS
 		#check connection to AMD
 		set +e
-		RETURN=`$WGET --no-check-certificate -q --header="Accept: application/xml" -O - $url/RtmDataServlet?cmd=version`
+#		RETURN=`$WGET --no-check-certificate -q --header="Accept: application/xml" -O - $url/RtmDataServlet?cmd=version`
+		RETURN=`$CURL --insecure --silent -u $g:$d $b://$e:$c/RtmDataServlet?cmd=version -o -`
 		if [ $? -ne 0 ]; then RETURN=; fi
 		set -e
 		debugecho "AMD Version Info: $RETURN" 2
