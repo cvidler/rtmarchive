@@ -152,12 +152,14 @@ if ( isset($_SERVER['HTTPS']) ) {
 } else { 
 	$serverssl = ""; 
 }
+$username = $_SERVER['AUTHENTICATE_UID'];
 $user = $_SERVER['REMOTE_ADDR'];
 if ( $user === "::1" or $user === "127.0.0.1" ) { 
 	$localuser = 1; 
 } else { 
 	$localuser = ""; 
 }
+if ($username != "") { $user = $username; }
 
 
 // multi select data set code
@@ -353,8 +355,10 @@ class IgnorantRecursiveDirectoryIterator extends RecursiveDirectoryIterator {
 
 function get_dir_size($directory) {
 	$size = 0;
-	foreach (new RecursiveIteratorIterator(new IgnorantRecursiveDirectoryIterator($directory)) as $file) {
-		$size += $file->getSize();
+	if ( file_exists($directory) ) {
+		foreach (new RecursiveIteratorIterator(new IgnorantRecursiveDirectoryIterator($directory)) as $file) {
+			$size += $file->getSize();
+		}
 	}
 	return $size;
 }
@@ -559,6 +563,7 @@ if ( $datalines === 0 ) {
 <td colspan="2">
 <p><br/><font size=-1>
 <?php
+echo 'User name: '.$user.' ';
 $dir = BASEDIR;
 $size = getSymbolByQuantity(get_dir_size($dir));
 echo 'Archive size: '.$size;
