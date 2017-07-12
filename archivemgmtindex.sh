@@ -9,7 +9,7 @@
 # Config
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=/opt/rtmarchive
-MAXTHREADS=4
+MAXTHREADS=2
 DEBUG=0
 
 # Script below do not edit
@@ -86,16 +86,20 @@ years=0
 months=0
 days=0
 files=0
+jobcount=0
+
+outfile=$(mktemp)
+debugecho "outfile [$outfile]" 2
 
 #list contents of BASEDIR for 
 for AMD in "$BASEDIR"/*; do
-	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
 	(
 	    # only interested if it has got AMD data in it
 	    if [ ! -r "$AMD/prevdir.lst" ]; then continue; fi
 		amds=$((amds+1))
 	    AMDNAME=`echo $AMD | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `
 	    techo "Processing AMD: $AMDNAME"
+		debugecho "PID: [$BASHPID]"
 
 		# recurse year/month/day directory structure
 	    for YEAR in "$AMD"/*; do
@@ -157,12 +161,23 @@ for AMD in "$BASEDIR"/*; do
 			done
 
 		done
-	) &
-	wait
-done
+	    techo "Processing AMD: $AMDNAME Finished"
+		echo -e "$amds,$years,$months,$days,$files" >> $outfile
+	) & 
+	while [ $(pgrep -c -P $$) -ge $MAXTHREADS ]; do sleep 1; done
+done; wait
+
+while read a b c d e; do
+    amds=$((amds + a))
+    years=$((years + b))
+    months=$((months + c))
+    days=$((days + d))
+	files=$((files + e))
+done < $outfile
+rm -f $outfile
 
 tfinish=`date -u +%s`
 tdur=$((tfinish-tstart))
 techo "rtmarchive Archive Search Indexer Script"
-techo "Completed $amds AMDs, $years years, $months, months, $days days, totalling $files files in $tdur seconds."
+techo "Completed $amds AMDs, $years years, $months months, $days days, totalling $files files in $tdur seconds."
 
