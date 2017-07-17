@@ -64,6 +64,18 @@ function techo {
 	echo -e "[`date -u`][$AMDNAME]: $1" 
 }
 
+function checksilent {
+
+	if [ $SILENT -ne 0 ]; then debugecho "silent output forced by: command line -s" 2; echo -e "1"; fi
+
+	if [ $BC == "" ]; then debugecho "silent output forced by: no 'bc' command" 2; echo -e "1"; fi
+
+	if [[ -t "0" || -p /dev/stdin ]]; then debugecho "silent output forced: by not run interactively" 2; echo -e "1"; fi
+
+	echo -e "0"
+
+}
+
 
 # command line arguments
 AMDNAME=0
@@ -72,6 +84,7 @@ URL=0
 NSET=0
 BSET=0
 USET=0
+SILENT=0
 OPTS=1
 while getopts ":dfhn:b:u:" OPT; do
 	case $OPT in
@@ -102,6 +115,9 @@ while getopts ":dfhn:b:u:" OPT; do
 			USET=1
 			OPTS=1
 			;;
+		s)
+			SILENT=1
+			;;
 		\?)
 			OPTS=0 #show help
 			techo "*** FATAL: Invalid argument -$OPTARG."
@@ -116,8 +132,9 @@ done
 if [ $USET -eq 0 ] || [ $BSET -eq 0 ] || [ $USET -eq 0 ]; then OPTS=0; fi
 
 if [ $OPTS -eq 0 ]; then
-	echo -e "*** INFO: Usage: $0 [-h] -n amdname -u amdurl -b basearchivedir"
+	echo -e "*** INFO: Usage: $0 [-h] [-s] -n amdname -u amdurl -b basearchivedir"
 	echo -e "-h This help"
+	echo -e "-s minimal (silent) output"
 	echo -e "-n amdname AMD descriptive name. Required"
 	echo -e "-u amdurl AMD connection url. Required"
 	echo -e "-b basearchivedir Archive directory path. Required"
@@ -142,6 +159,9 @@ if [ -z "$URL" ]; then
 	techo "\e[31m***FATAL:\e[0m URL parameter not supplied. Aborting."
 	exit 1
 fi
+
+SILENT=$(checksilent)
+debugecho "SILENT: [$SILENT]" 2
 
 techo "AMD Archiving script"
 techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
@@ -237,7 +257,7 @@ while read -r ts; do
 
 
 	#progress display
-	if [ ! "$BC" == "" ] && [ -t 1 ] ; then		
+	if [ $SILENT -eq 0 ] ; then		
 		# figure out percentages of progress
 		PERC=0$($BC -l <<<  "(($count/$diffcount) * 100); " ); PERC=${PERC%.*}; PERC=${PERC#0}; if [ "$PERC" == "" ]; then PERC=0; fi
 		PERC2=0$($BC -l <<<  "(($tcount/$tscount) * 100); " ); PERC2=${PERC2%.*}; PERC2=${PERC2#0}; if [ "$PERC2" == "" ]; then PERC2=0; fi
