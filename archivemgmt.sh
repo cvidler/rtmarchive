@@ -77,7 +77,7 @@ techo "Starting"
 
 #list contents of BASEDIR for 
 for DIR in "$BASEDIR"/*; do
-	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
+	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 10; done
 	(
 	# only interested if it has got AMD data in it
 	if [ ! -r "$DIR/prevdir.lst" ]; then continue; fi
@@ -90,7 +90,9 @@ for DIR in "$BASEDIR"/*; do
 		for MONTH in "$YEAR"/*; do
 			if [ ! -d "$MONTH" ]; then continue; fi
 			for DAY in "$MONTH"/*;  do
-				if [ ! -d "$DAY" ]; then continue; fi
+				if [ ! -d "$DAY" ]; then debugecho "Skipping non-folder [$DAY]", 3; continue; fi
+				if [[ ${DAY} =~ DDD[0-9]+$ ]]; then debugecho "skipping folder in delete phase [$DAY]", 2; continue; fi
+
 				debugecho "Processing directory DAY: [$DAY]" 2
 				DATADATE=`echo $YEAR | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `-`echo $MONTH | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `-`echo $DAY | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `
 				debugecho "Processing date: DATADATE: [$DATADATE]" 2
@@ -136,25 +138,28 @@ for DIR in "$BASEDIR"/*; do
 
 					#grab server/client/port details from zdata 'U' and 'h' records
 					if [ $ZDATA -ne 0 ]; then
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t | 
+						FILEEXT="$DAY/zdata_*_t"
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' $FILEEXT | 
 							$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t >> "$DAY"/serverips.lst.tmp
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t >> "$DAY"/clientips.lst.tmp
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t >> "$DAY"/serverports.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/serverips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/clientips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/serverports.lst.tmp
 					fi
 					if [ $VOLDATA -ne 0 ]; then
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_vol | 
+						FILEEXT="$DAY/zdata_*_t_vol"
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' $FILEEXT | 
 							$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_vol >> "$DAY"/serverips.lst.tmp
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_vol >> "$DAY"/clientips.lst.tmp
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_vol >> "$DAY"/serverports.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/serverips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/clientips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/serverports.lst.tmp
 					fi
 					if [ $IPDATA -ne 0 ]; then
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_ip | 
+						FILEEXT="$DAY/zdata_*_t_ip"
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' $FILEEXT | 
 							$AWK -vRS='%[0-9a-fA-F]{2}' 'RT{sub("%","0x",RT);RT=sprintf("%c",strtonum(RT))}{gsub(/\+/," ");printf "%s", $0 RT}' >> "$DAY"/softwareservice.lst.tmp
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_ip >> "$DAY"/serverips.lst.tmp
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_ip >> "$DAY"/clientips.lst.tmp
-						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' "$DAY"/zdata_*_t_ip >> "$DAY"/serverports.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$2]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/serverips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$3]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/clientips.lst.tmp
+						$AWK -F" " '$1 ~/^[Uh]/ { a[$6]++ } END { for (b in a) {print b} }' $FILEEXT >> "$DAY"/serverports.lst.tmp
 					fi
 
 					#grab server/client/port details from ndata
@@ -190,8 +195,17 @@ for DIR in "$BASEDIR"/*; do
 						#succesful, checksum the archive and clean up data files
 						$SHA512SUM $MONTH/$ARCNAME > $MONTH/$ARCNAME.sha512
 						chmod -w $MONTH/$ARCNAME $MONTH/$ARCNAME.sha512
-						rm -f "$DAY"/*data_* "$DAY"/vdataidx_* "$DAY"/page2transmap_*
-						rm -rf "$DAY"/conf
+						#rm -f "$DAY"/*data_* "$DAY"/vdataidx_* "$DAY"/page2transmap_*
+						#rm -rf "$DAY"/conf
+						DDAY=${MONTH}/DDD${DAY##*/}
+						debugecho "DDAY: [$DDAY]", 2
+						mv "$DAY" "$DDAY"
+						mkdir -p "$DAY"
+						cp "$DDAY"/*.lst "$DAY"
+						EDIR=`mktemp -d`
+						rsync -a --delete "$EDIR/" "$DDAY/"
+						rm -rf "$DDAY"
+						rm -rf "$EDIR"
 					else
 						#failed
 						techo "\e[33m***WARNING:\e[0m Couldn't archive data files in: $DAY, will try again next time."
