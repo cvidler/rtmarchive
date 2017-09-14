@@ -66,12 +66,16 @@ function techo {
 
 function checksilent {
 
-	if [ $SILENT -ne 0 ]; then debugecho "silent output forced by: command line -s" 2; echo -e "1"; fi
+	# silent output forced by: command line -s
+	if [ $SILENT -ne 0 ]; then echo -e "1"; exit; fi
 
-	if [ $BC == "" ]; then debugecho "silent output forced by: no 'bc' command" 2; echo -e "1"; fi
+	# silent output forced by: no 'bc' command 
+	if [ $BC == "" ]; then echo -e "1"; exit; fi
 
-	if [[ -t "0" || -p /dev/stdin ]]; then debugecho "silent output forced: by not run interactively" 2; echo -e "1"; fi
+	# silent output forced: by not run interactively
+	if [[ -t "0" || -p /dev/stdin ]]; then echo -e "1"; exit; fi
 
+	# non-silent running
 	echo -e "0"
 
 }
@@ -163,8 +167,10 @@ fi
 SILENT=$(checksilent)
 debugecho "SILENT: [$SILENT]" 2
 
-techo "AMD Archiving script"
-techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
+if [ $SILENT -eq 0 ] ; then
+	techo "AMD Archiving script"
+	techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
+fi
 techo "Archiving AMD: $AMDNAME beginning"
 tstart=`date -u +%s`
 
@@ -268,9 +274,9 @@ while read -r ts; do
 		techo "Processed files: $count/$diffcount $PERC%" 
 		techo "Processed intervals: $tcount/$tscount $PERC2%" 
 		techo "[`$HEAD -c $BARL < /dev/zero | $TR '\0' '#' ``$HEAD -c $BARR < /dev/zero | $TR '\0' ' '`] $PERC%"
-	else
-		techo "Processed files: $count/$diffcount" 
-		techo "Processed intervals: $tcount/$tscount" 
+#	else
+#		techo "Processed files: $count/$diffcount" 
+#		techo "Processed intervals: $tcount/$tscount" 
 	fi
 	debugecho "count: [$count], diffcount: [$diffcount], PERC: [$PERC], BARL: [$BARL], BARR: [$BARR], COLUMNS: [$DISPCOLS], tcount [$tcount], tscount: [$tscount], PERC2: [$PERC2]" 2
 
