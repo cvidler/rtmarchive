@@ -10,7 +10,7 @@ AMDLIST=/etc/amdlist.cfg
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=/opt/rtmarchive
 PIDFILE=/tmp/rtmarchive.pid
-MAXTHREADS=4
+MAXTHREADS=$(($(nproc)*4))
 DEBUG=0
 
 
@@ -112,17 +112,36 @@ amds=0
 AAMDS=`$AWK -F"," '$1=="A" { print $3","$2 } ' $AMDLIST`
 debugecho "AAMDS: [$AAMDS]" 2
 if [ $DEBUG -ne 0 ]; then DODEBUG=-`$HEAD -c $DEBUG < /dev/zero | $TR '\0' 'd' `; fi
+
+pidfifo=$(mktemp --dry-run)
+mkfifo --mode=0700 $pidfifo
+exec 3<>$pidfifo
+rm -f $pidfifo
+running=0
+debugecho "MAXTHREADS: [$MAXTHREADS]"
+
 while IFS=$',' read -r p q; do
 	debugecho "p: [$p] q: [$q]" 2
-	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 1; done
+	while (( running >= $MAXTHREADS )) ; do
+		if read -u 3 cpid ; then
+			wait $cpid
+			(( --running ))
+		fi
+	done
+	debugecho "running threads: [$running]"
 	amds=$((amds+1))
 	(
+		echo $BASHPID 1>&3
 		techo "Launching amdarchive script for: ${p}"
 		RUNCMD="$SCRIPTDIR/archiveamd.sh -n \"${p}\" -u \"${q}\" -b \"$BASEDIR\" $DODEBUG"
 		debugecho "RUNCMD: $RUNCMD"
+		set +e
 		$SCRIPTDIR/archiveamd.sh -n "${p}" -u "${q}" -b "$BASEDIR" $DODEBUG 
+		set -e
 	) &
-done < <(echo "$AAMDS") ; wait
+	(( ++running ))
+done < <(echo "$AAMDS")
+wait
 
 rm -f $PIDFILE
 

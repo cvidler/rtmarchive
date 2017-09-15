@@ -9,7 +9,7 @@
 # Config
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=/opt/rtmarchive
-MAXTHREADS=2
+MAXTHREADS=$(($(nproc)*4))
 DEBUG=0
 
 # Script below do not edit
@@ -91,9 +91,25 @@ jobcount=0
 outfile=$(mktemp)
 debugecho "outfile [$outfile]" 2
 
+pidfifo=$(mktemp --dry-run)
+mkfifo --mode=0700 $pidfifo
+exec 3<>$pidfifo
+rm -f $pidfifo
+running=0
+debugecho "MAXTHREADS: [$MAXTHREADS]"
+
 #list contents of BASEDIR for 
 for AMD in "$BASEDIR"/*; do
+	while (( running >= $MAXTHREADS )) ; do
+		if read -u 3 cpid ; then
+			wait $cpid
+			(( --running ))
+		fi
+	done
+	debugecho "running threads: [$running]"
+
 	(
+		echo $BASHPID 1>&3
 	    # only interested if it has got AMD data in it
 	    if [ ! -r "$AMD/prevdir.lst" ]; then continue; fi
 		amds=$((amds+1))
@@ -164,8 +180,9 @@ for AMD in "$BASEDIR"/*; do
 	    techo "Processing AMD: $AMDNAME Finished"
 		echo -e "$amds,$years,$months,$days,$files" >> $outfile
 	) & 
-	while [ $(pgrep -c -P $$) -ge $MAXTHREADS ]; do sleep 1; done
-done; wait
+	(( ++running ))
+done
+wait
 
 while read a b c d e; do
     amds=$((amds + a))

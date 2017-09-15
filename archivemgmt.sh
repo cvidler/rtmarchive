@@ -9,7 +9,7 @@
 # Config
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=/opt/rtmarchive
-MAXTHREADS=4
+MAXTHREADS=$(($(nproc)*4))
 DEBUG=0
 
 
@@ -75,10 +75,26 @@ techo "rtmarchive Archive Management Script"
 techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
 techo "Starting"
 
+pidfifo=$(mktemp --dry-run)
+mkfifo --mode=0700 $pidfifo
+exec 3<>$pidfifo
+rm -f $pidfifo
+running=0
+debugecho "MAXTHREADS: [$MAXTHREADS]"
+
 #list contents of BASEDIR for 
 for DIR in "$BASEDIR"/*; do
-	while [ $($JOBS -r | $WC -l) -ge $MAXTHREADS ]; do sleep 10; done
+
+	while (( running >= $MAXTHREADS )) ; do
+		if read -u 3 cpid ; then
+			wait $cpid
+			(( --running ))
+		fi
+	done
+	debugecho "running threads: [$running]"
+
 	(
+	echo $BASHPID 1>&3
 	# only interested if it has got AMD data in it
 	if [ ! -r "$DIR/prevdir.lst" ]; then continue; fi
 	AMDNAME=`echo $DIR | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `
@@ -227,10 +243,13 @@ for DIR in "$BASEDIR"/*; do
 	done
 	techo "Processing AMD: $AMDNAME complete."
 	) &	
+	(( ++running ))
+
 	if [ $? -ne 0 ]; then
 		techo "\e[33m***WARNING:\e[0m $AMDNAME failed archive management."
 	fi
-done; wait
+done
+wait
 
 tfinish=`date -u +%s`
 tdur=$((tfinish-tstart))
