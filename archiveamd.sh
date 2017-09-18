@@ -278,7 +278,7 @@ while read -r ts; do
 #		techo "Processed files: $count/$diffcount" 
 #		techo "Processed intervals: $tcount/$tscount" 
 	fi
-	debugecho "count: [$count], diffcount: [$diffcount], PERC: [$PERC], BARL: [$BARL], BARR: [$BARR], COLUMNS: [$DISPCOLS], tcount [$tcount], tscount: [$tscount], PERC2: [$PERC2]" 2
+	debugecho "count: [$count], diffcount: [$diffcount], PERC: [$PERC], BARL: [$BARL], BARR: [$BARR], COLUMNS: [$DISPCOLS], tcount [$tcount], tscount: [$tscount]" 2
 
 
 	#figure out date to create directory
