@@ -9,7 +9,7 @@
 # Config
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=/opt/rtmarchive
-MAXTHREADS=$(($(nproc)*4))
+MAXTHREADS=$(($(nproc)*1))
 DEBUG=0
 
 
