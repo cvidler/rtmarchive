@@ -10,6 +10,7 @@
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=/opt/rtmarchive
 MAXTHREADS=$(($(nproc)*1))
+PIDFILE=/tmp/archivemgmt.pid
 DEBUG=0
 
 
@@ -74,6 +75,14 @@ tstart=`date -u +%s`
 techo "rtmarchive Archive Management Script"
 techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
 techo "Starting"
+
+if [ ! -r $PIDFILE ]; then
+	echo -e "$$" > $PIDFILE
+else
+	techo "archivemgmt script already running pid: `cat $PIDFILE`. Aborting."
+	exit 1
+fi
+
 
 pidfifo=$(mktemp --dry-run)
 mkfifo --mode=0700 $pidfifo
@@ -251,10 +260,10 @@ for DIR in "$BASEDIR"/*; do
 done
 wait
 
+rm -f "$PIDFILE"
+
 tfinish=`date -u +%s`
 tdur=$((tfinish-tstart))
 techo "rtmarchive Archive Management Script"
 techo "Completed in $tdur seconds"
-
-
 

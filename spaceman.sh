@@ -22,6 +22,7 @@
 
 # location of archive storage
 BASEDIR=/var/spool/rtmarchive
+PIDFILE=/tmp/spaceman.pid
 
 # free space warning and critical thresholds %
 WARNPER=20
@@ -107,6 +108,13 @@ function sendalert {
 
 
 # main code
+
+if [ ! -r $PIDFILE ]; then
+	echo -e "$$" > $PIDFILE
+else
+	techo "spaceman script already running pid: `cat $PIDFILE`. Aborting."
+	exit 1
+fi
 
 #use 'df' and the basedir to determine which volume the archive is on, and size/used/free.
 RET=`df -BM $BASEDIR | tail -n 1`
@@ -206,6 +214,8 @@ if [ $AUTO_MANAGE -eq 1 ] && [ $NEED_CLEANUP -eq 1 ]; then
 	done
 
 fi
+
+rm -f $PIDFILE
 
 # exit
 exit 0

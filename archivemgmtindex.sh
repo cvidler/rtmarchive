@@ -9,6 +9,7 @@
 # Config
 BASEDIR=/var/spool/rtmarchive
 SCRIPTDIR=/opt/rtmarchive
+PIDFILE=/tmp/archivemgmtindex.pid
 MAXTHREADS=$(($(nproc)*4))
 DEBUG=0
 
@@ -73,6 +74,13 @@ tstart=`date -u +%s`
 techo "rtmarchive Archive Search Indexer Script"
 techo "Chris Vidler - Dynatrace DCRUM SME, 2016"
 techo "Starting"
+
+if [ ! -r $PIDFILE ]; then
+	echo -e "$$" > $PIDFILE
+else
+	techo "archivemgmtindex script already running pid: `cat $PIDFILE`. Aborting."
+	exit 1
+fi
 
 #determine yesterday (UTC)
 today=$($DATE -u +"%s")
@@ -192,6 +200,8 @@ while read a b c d e; do
 	files=$((files + e))
 done < $outfile
 rm -f $outfile
+
+rm -f $PIDFILE
 
 tfinish=`date -u +%s`
 tdur=$((tfinish-tstart))
