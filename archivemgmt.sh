@@ -126,14 +126,23 @@ for DIR in "$BASEDIR"/*; do
 				ZCOUNT=0
 				set +e
 				ZCOUNT=$(ls "$DAY"/zdata_* 2> /dev/null | wc -l)
+				#INTLEN=$((16#$(ls "$DAY"/zdata_* 2> /dev/null | head -n 1 | awk 'BEGIN {FS="_"} {print $3}')))
+				#debugecho "$(ls -1 $DAY/zdata_*)", 2
+				INTLEN=$(ls -1 "$DAY"/zdata_* 2> /dev/null | head -n 1 | awk 'BEGIN {FS="_"} {print $3}')
+				if [ "$INTLEN"=="" ]; then INTLEN=5; fi
+				debugecho "INTLEN: [$INTLEN]", 2
 				set -e
 				updated=0
 				# if there is zdata (already archived) and it is not todays date (incomplete data), then archvie it
 				nowtime=$($DATE -u +"%s")
 				datatime=$($DATE -u -d "$DATADATE" +"%s")
 				archivedelay=$(($nowtime-$datatime))
-				debugecho "archivedelay: [$archivedelay] seconds" 2
+				#expected=288
+				expected=$((1440/$INTLEN))
+				debugecho "ZCOUNT: [$ZCOUNT] INTLEN: [$INTLEN] expected: [$expected] archivedelay: [$archivedelay] seconds" 2
+				
 				if [ $ZCOUNT -ne 0 ]; then if [ $archivedelay -gt 86400 ]; then
+					if [ $ZCOUNT -lt $expected ]; then debugecho "Day not yet fully downloaded, intervals found [$ZCOUNT] expected [$expected], skipping" ; continue; fi
 
 					# check for existing archive, skip if found - don't want to overwrite archived data.
 					ARCNAME=$AMDNAME-$DATADATE.tar.bz2
@@ -236,7 +245,7 @@ for DIR in "$BASEDIR"/*; do
 						techo "\e[33m***WARNING:\e[0m Couldn't archive data files in: $DAY, will try again next time."
 					fi
 				else
-					debugecho "DATADATE: [$DATADATE] = today, not archiving yet."
+					debugecho "DATADATE: [$DATADATE] = today, not ready to archive yet. skipping."
 				fi
 				else
 					#no zdata files found, test to see if truely empty, or already archived.
