@@ -142,7 +142,6 @@ for DIR in "$BASEDIR"/*; do
 				debugecho "ZCOUNT: [$ZCOUNT] INTLEN: [$INTLEN] expected: [$expected] archivedelay: [$archivedelay] seconds" 2
 				
 				if [ $ZCOUNT -ne 0 ]; then if [ $archivedelay -gt 86400 ]; then
-					if [ $ZCOUNT -lt $expected ]; then debugecho "Day not yet fully downloaded, intervals found [$ZCOUNT] expected [$expected], skipping" ; continue; fi
 
 					# check for existing archive, skip if found - don't want to overwrite archived data.
 					ARCNAME=$AMDNAME-$DATADATE.tar.bz2
@@ -164,6 +163,10 @@ for DIR in "$BASEDIR"/*; do
 					NDATA=$(ls -1 "$DAY"/ndata_*_t_rtm 2> /dev/null | wc -l)
 					set -e
 					debugecho "ZDATA: [$ZDATA], VOLDATA: [$VOLDATA], IPDATA: [$IPDATA], NDATA: [$NDATA]" 1
+
+					if [ $NDATA -gt $ZDATA ]; then INTS=$NDATA; else INTS=$ZDATA; fi
+					if [ $INTS -lt $expected ]; then debugecho "Day not yet fully downloaded, intervals found [$INTS] expected [$expected], skipping" ; continue; fi
+
 
 					# grab version from non HS AMD zdata						
 					if [ $ZDATA -ne 0 ]; then $AWK -F" " '$1=="V" { printf("%s.%s.%s.%s", $2,$3,$4,$5) }' "$DAY"/zdata_*_t >> "$DAY"/versions.lst.tmp; fi
