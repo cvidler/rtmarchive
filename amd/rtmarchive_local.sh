@@ -128,6 +128,11 @@ rm -f $pidfifo
 running=0
 debugecho "MAXTHREADS: [$MAXTHREADS]"
 
+#regex templates
+TSPATTERN="[a-z0-9A-Z% _-]+_([0-9a-f]{8})_[a-f0-9]+_[tb][_0-9a-z]*"
+FTPATTERN="([a-z0-9A-Z% _-]+)_[0-9a-f]{8}_[a-f0-9]+_[tb][_0-9a-z]*"
+ILPATTERN="[a-z0-9A-Z% _-]+_[0-9a-f]{8}_([a-f0-9]+)_[tb][_0-9a-z]*"
+
 olddir=`pwd`
 # loop through data sets (e.g. rtm and nfc) determine what days of data do we have, produce a list of the days.
 IFS=","; for dataset in $DATASETS; do
@@ -145,11 +150,11 @@ IFS=","; for dataset in $DATASETS; do
 	# iterate file name, extracting timestamps, calculate dates in play
 	dates=""
 	dates=$(echo $datafiles | while read file; do
-		ts=${file#*_}
-		ts=${ts%%_*}
+		[[ $file =~ $TSPATTERN ]]
+		ts=${BASH_REMATCH[1]}
 		echo "`TZ=UTC; printf "%(%Y-%m-%d)T" 0x$ts`"
 	done)
-	debugecho "dates [$dates]" 2
+	debugecho "dates [$dates]" 3
 	# sort and uniq dates list
 	dates=$(echo -e "$dates" | $SORT | $UNIQ)
 	debugecho "dataset: [$dataset] dates: [$dates]"
@@ -157,7 +162,7 @@ IFS=","; for dataset in $DATASETS; do
 	techo "$BASEDIR/$dataset contains `echo $dates | wc -l` full/partial days of data"
 
 	# iterate known dates archiving if complete and not already done
-	echo $dates | while read date; do
+	echo -e "$dates" | while read date; do
 
 		debugecho "Testing archivability of: [$date]"
 
@@ -180,13 +185,14 @@ IFS=","; for dataset in $DATASETS; do
 		filelist=""
 		ncount=0
 		intlen=1
-		for file in *; do
-			ts=${file#*_}
-			ts=${ts%%_*}
-			ftype=${file##*/}
-			ftype=${ftype%%_*}
-			
-			debugecho "file: [$file], ftype: [$ftype], ts: [$ts]" 2
+		first=0
+		last=0
+		while read file; do
+			[[ $file =~ $TSPATTERN ]]
+			ts=${BASH_REMATCH[1]}
+			[[ $file =~ $FTPATTERN ]]
+			ftype=${BASH_REMATCH[1]}
+			#debugecho "file: [$file], ftype: [$ftype], ts: [$ts]" 2
 			
 			# check if file matches a timestamp we want
 			if [[ $tss != *${ts}* ]]; then continue; fi
@@ -194,26 +200,48 @@ IFS=","; for dataset in $DATASETS; do
 			# add file to file list for futher processing
 			filelist="${filelist}\n${file}"
 
-			if [ "$ftype" == "ndata" ]; then
-				intlen=$(echo $file | awk 'BEGIN {FS="_"} {print $3}')
+			if [ "$ftype" == "amddata" ]; then
+				#intlen=$(echo $file | awk 'BEGIN {FS="_"} {print $3}')
+				[[ $file =~ $ILPATTERN ]]
+				intlen=${BASH_REMATCH[1]}
 				ncount=$((ncount+1))
+
+				if [[ $tss == ${ts}* ]]; then first=1; fi
+				if [[ $tss == *${ts} ]]; then last=1; fi
 			fi
 
-		done
+		done < <(echo -e "$datafiles")
+
 		debugecho "date: [$date] filelist: [$filelist]" 2
 
+		#check totals
 		total=$((1440 / 0x$intlen ))
-		debugecho "ncount: [$ncount] intlen: [$intlen] total: [$total]" 2
+		debugecho "ncount: [$ncount] intlen: [$intlen] total: [$total] first: [$first] last: [$last]" 2
  		#*** DEBUGGING ***
-		#if [ $DEBUG -ge 2 ]; then
-		#	ncount=$total
-		#	intlen=1
-		#fi
+		if [ $DEBUG -ge 2 ]; then
+			ncount=$total
+			intlen=1
+		fi
 		#*** DEBUGGING
 		if [ $ncount -eq 0 ]; then techo "No ndata files for day: $date"; continue; fi 
 
 		# if insufficient files found, skip til next time
-		if [ $ncount -lt $total ]; then techo "Incomplete data for day: $date, $ncount intervals of $total expected. Skipping."; continue; fi
+		if [ $ncount -lt $total ]; then 
+			if [ $first ] && [ $last ]; then
+				# got both first and last interval, but missing others.
+				techo "Missing data intervals for day: $date, first and last intervals present. Archiving"
+			elif [ $first ] && [ ! $last ]; then
+				#first but no last interval
+				techo "Incomplete data for day: $date, $ncount intervals of $total expected. Skipping."
+				continue
+			elif [ ! $first ] && [ $last ]; then
+				#last interval but not the first
+				techo "Missing start interval for day: $date."
+			else
+				#wtf, no first or last intervals.
+				debugecho "No first or last interface for day: $date"
+			fi
+		fi
 
 		# correct number of files present, archive them
 		echo -e "$filelist" | tar -cjf "$arcfile" -T -
