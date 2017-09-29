@@ -33,7 +33,7 @@ SHA512SUM=`which sha512sum`
 WC=`which wc`
 AMDNAME="$(hostname)"
 AMDNAME=${AMDNAME##*.}
-
+AMDNAME=${AMDNAME^^}
 
 # command line arguments
 OPTS=1
@@ -128,12 +128,15 @@ rm -f $pidfifo
 running=0
 debugecho "MAXTHREADS: [$MAXTHREADS]"
 
+olddir=`pwd`
 # loop through data sets (e.g. rtm and nfc) determine what days of data do we have, produce a list of the days.
 IFS=","; for dataset in $DATASETS; do
 	debugecho "Enumerating available data in $BASEDIR/$dataset"
 
+	cd "$BASEDIR/$dataset"
+
 	set +e
-	datafiles=$(ls -1 "$BASEDIR/$dataset" | grep -oE '[a-z0-9A-Z%\-\ _]+_[0-9a-f]{8}_[a-f0-9]+_[tb][_0-9a-z]*' | $SORT -t "_" -k 2d,3 -k 1d,2)
+	datafiles=$(ls -1 | grep -oE '[a-z0-9A-Z%\-\ _]+_[0-9a-f]{8}_[a-f0-9]+_[tb][_0-9a-z]*' | $SORT -t "_" -k 2d,3 -k 1d,2)
 	set -e
 	
 	if [ "$datafiles" == "" ]; then debugecho "No data files in [$BASEDIR/$dataset]"; continue; fi
@@ -157,8 +160,16 @@ IFS=","; for dataset in $DATASETS; do
 	echo $dates | while read date; do
 
 		debugecho "Testing archivability of: [$date]"
+
+		arcfile="${BASEDIR}/${dataset}/${AMDNAME}-${date}.tar.bz2"
+		debugecho "arcfile: [$arcfile]"
+
+		if [ -f $arcfile ]; then
+			techo "Archive for day $date already completed. Skipping"
+			continue
+		fi
 		
-		#create list of all possible time stamps for this date. /min resolution 1440 timestamps.
+		#create list of all possible time stamps for this date. /min resolution 1440 possible timestamps.
 		startts=`TZ=UTC; date +%s --date "$date 00:00:00"`
 		tss=$(for secs in {0..86399..60}; do
 			printf "%x\n" $((secs+startts))
@@ -166,25 +177,67 @@ IFS=","; for dataset in $DATASETS; do
 		#debugecho `echo $tss | wc -l`
 
 		# use timestamp list to collate all matching files
-		for file in $BASEDIR/$dataset/*; do
+		filelist=""
+		ncount=0
+		intlen=1
+		for file in *; do
+			ts=${file#*_}
+			ts=${ts%%_*}
+			ftype=${file##*/}
+			ftype=${ftype%%_*}
 			
+			debugecho "file: [$file], ftype: [$ftype], ts: [$ts]" 2
+			
+			# check if file matches a timestamp we want
+			if [[ $tss != *${ts}* ]]; then continue; fi
+
+			# add file to file list for futher processing
+			filelist="${filelist}\n${file}"
+
+			if [ "$ftype" == "ndata" ]; then
+				intlen=$(echo $file | awk 'BEGIN {FS="_"} {print $3}')
+				ncount=$((ncount+1))
+			fi
+
 		done
-		echo 
+		debugecho "date: [$date] filelist: [$filelist]" 2
 
-		# if correct number of files present, archive them
-		# or not if already arhived
+		total=$((1440 / 0x$intlen ))
+		debugecho "ncount: [$ncount] intlen: [$intlen] total: [$total]" 2
+ 		#*** DEBUGGING ***
+		#if [ $DEBUG -ge 2 ]; then
+		#	ncount=$total
+		#	intlen=1
+		#fi
+		#*** DEBUGGING
+		if [ $ncount -eq 0 ]; then techo "No ndata files for day: $date"; continue; fi 
 
-		# insufficient files, skip til next time
+		# if insufficient files found, skip til next time
+		if [ $ncount -lt $total ]; then techo "Incomplete data for day: $date, $ncount intervals of $total expected. Skipping."; continue; fi
 
+		# correct number of files present, archive them
+		echo -e "$filelist" | tar -cjf "$arcfile" -T -
+		if [ $? -ne 0 ]; then
+			techo "Failed to create archive $arcfile!"
+		fi 
 
+		# hash and sign archive with AMDs key/certificate
+		PKI="/usr/adlex/config/tomcat/gate"
+		if [ -r "$PKI.key" ] && [ -r "$PKI.crt" ]; then
+			# hash and sign
+			openssl dgst -sha512 -sign "$PKI.key" -out "$arcfile.sha512" "$arcfile"
+			#echo $(base64 "$arcfile.sha512")
+			# verify
+			openssl dgst -sha512 -verify <(openssl x509 -in "$PKI.crt" -pubkey -noout) -signature "$arcfile.sha512" "$arcfile"
+		fi
 
 	done
 
 done
 
 
-
 # Done
+cd $olddir
 rm $PIDFILE
 techo "Complete"
 
