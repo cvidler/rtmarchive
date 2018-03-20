@@ -61,6 +61,35 @@ function readfile_chunked($filename, $retbytes = TRUE) {
 }
 
 
+function updateAccessTime($match) {
+	$output = "";
+	if ( file_exists("activedatasets.conf") ) {
+		$file = fopen("activedatasets.conf","r");
+		    while (($buffer = fgets($file)) !== false ) {
+				$buffer = trim($buffer);
+				if ( ($buffer !== "" ) and (substr($buffer, 0, 1) !== "#") ) { 
+			        $temp = explode(",", $buffer);
+
+					if ( $temp[0] == $match ) {
+						$output = $output.$temp[0].",".$temp[1].",".$temp[2].",".$temp[3].",".$temp[4].",".$temp[5].",".time()."\n";
+					} else {
+						$output = $output.$buffer."\n";
+					}
+				}
+			}
+		    fclose($file);
+	
+	} else {
+		echo "***WARNING: Archive AMD config file not found or not writeable.\n";
+		exit;
+	}
+
+	$file = fopen("activedatasets.conf","w");
+	fwrite($file, $output);
+	fclose($file);
+
+}
+
 header_remove();
 
 if ( is_dir(BASEDIR) ) {} else {
@@ -84,6 +113,7 @@ if ( file_exists("activedatasets.conf") ) {
 			$valid_passwords[$data[2]] = $data[3];
 			$datasets[$data[2]] = $data[5];
 			$hids[$data[2]] = $data[0];
+			$lastaccess[$data[2]] = $data[6];
 		}
 	}
         fclose($file);
@@ -214,6 +244,9 @@ if ( $command === "version" ) {
 	rsort($data);
 	$data = array_unique($data);
 	$data = implode("\n", $data);
+
+	//update last access in conf file
+	updateAccessTime($hids[$user]);
 
 	if ( $command === "zip_dir" ) { $data = gzencode($data); header('Content-Encoding: gzip'); }
 	echo $data;

@@ -291,7 +291,7 @@ if ( isset($linkopts['add_dataset']) ) {
 				$temp = "|".$linkopts['amd']."-".$linkopts['year']."-".$linkopts['month']."-".$linkopts['day'];
 			}
 			$uuid = randnum();	
-			$output = $uuid.",".$user.",".generateRandomString().",".generateRandomString().",".$port.",".$temp."\n";
+			$output = $uuid.",".$user.",".generateRandomString().",".generateRandomString().",".$port.",".$temp.",0\n";
 	
 			fwrite($file, $output);
 			fclose($file);
@@ -339,6 +339,8 @@ if ( isset($linkopts['add_dataset']) ) {
 function getSymbolByQuantity($bytes) {
 	$symbols = array('B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB');
 	$exp = floor(log($bytes)/log(1024));
+
+	if ( $bytes == 0 ) { return "0.00"; }
 
 	return sprintf('%.2f'.$symbols[$exp], ($bytes/pow(1024, floor($exp))));
 }
@@ -526,7 +528,7 @@ if ( file_exists($filename) ) {
 		if ( ($data[1] === $user) or ($localuser) ) {
 			$datalines++;
 			if ( $data[1] <> $user ) { $notyours = "NOT YOUR DATASET, Confirm with user at: $data[1]\\n"; } else { $notyours = "";}
-			echo " <li>Logon: $data[2], Password: $data[3], Port: $data[4]<br/>\n ";
+			echo " <li>Logon: $data[2], Password: $data[3], Address: $serverip Port: $data[4]<br/>\n ";
 			$temp = explode("|", $data[5]);
 			$count = count($temp);
 			for ( $i = 0; $i < $count; $i++) {
@@ -537,8 +539,8 @@ if ( file_exists($filename) ) {
 				echo $temp2[0]." ".$temp2[1]."/".$temp2[2]."/".$temp2[3]."<br/>\n";
 			}
 			echo "<a onclick=\"javascript:return confirm('$notyours\\nRemove active dataset:".str_replace("|","\\n",$data[5])."\\non port: $data[4]');\" href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0])."\">";
-			echo "<font size=-1>Remove this dataset from the Archive AMD</a>";
-			if ( $localuser ) { echo " by $data[1]"; }
+			echo "<font size=-1>Remove this dataset from the Archive AMD</a> Last accessed: ".date("D d M Y H:i:s T", $data[6]);
+			if ( $localuser ) { echo " creator: $data[1]"; }
 			$dir = BASEDIR.".temp/".$data[0];
 			$size = getSymbolByQuantity(get_dir_size($dir));
 			echo ' Dataset size: '.$size;
