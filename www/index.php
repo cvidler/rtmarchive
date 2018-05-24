@@ -355,11 +355,12 @@ class IgnorantRecursiveDirectoryIterator extends RecursiveDirectoryIterator {
 
 function get_dir_size($directory) {
 	$size = 0;
-	if ( file_exists($directory) ) {
-		foreach (new RecursiveIteratorIterator(new IgnorantRecursiveDirectoryIterator($directory)) as $file) {
-			$size += $file->getSize();
-		}
-	}
+	// disable directory sizing due to poor performance - CV20180524
+	//if ( file_exists($directory) ) {
+	//	foreach (new RecursiveIteratorIterator(new IgnorantRecursiveDirectoryIterator($directory)) as $file) {
+	//		$size += $file->getSize();
+	//	}
+	//}
 	return $size;
 }
 
