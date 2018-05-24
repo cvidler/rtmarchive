@@ -170,7 +170,7 @@ if ( isset($linkopts['datasets']) ) {
 
 if ( isset($linkopts['check']) ) {
 	$count = count($tmpdatasets);
-	$tmpdatasets[$count + 1] = $linkopts['amd']."-".$linkopts['year']."-".$linkopts['month']."-".$linkopts['day'];
+	$tmpdatasets[$count + 1] = $linkopts['amd'].":".$linkopts['year'].":".$linkopts['month'].":".$linkopts['day'];
 	sort($tmpdatasets);
 }
 
@@ -178,7 +178,7 @@ if ( isset($linkopts['uncheck']) ) {
 
 	$count = count($tmpdatasets);
 	for ( $i = 0; $i < $count; $i++ ) {
-		$temp = $linkopts['amd']."-".$linkopts['year']."-".$linkopts['month']."-".$linkopts['day'];
+		$temp = $linkopts['amd'].":".$linkopts['year'].":".$linkopts['month'].":".$linkopts['day'];
 		if ( $tmpdatasets[$i] === $temp ) { 
 			unset($tmpdatasets[$i]); array_values($tmpdatasets); 
 		}
@@ -197,7 +197,7 @@ if ( $datasets <> "" ) {
 //grab the first selected AMD, we use this to lock the additon of any others.
 $activeamd = "";
 $activeamd = explode("|", $datasets);
-$activeamd = explode("-", @$activeamd[1]);
+$activeamd = explode(":", @$activeamd[1]);
 $activeamd = @$activeamd[0];
 if ( $activeamd == "" ) { 
 	$activeamd = "nothing"; 
@@ -288,7 +288,7 @@ if ( isset($linkopts['add_dataset']) ) {
 			if ( $datasets <> "" ) { 
 				$temp = $datasets;
 			} else { 
-				$temp = "|".$linkopts['amd']."-".$linkopts['year']."-".$linkopts['month']."-".$linkopts['day'];
+				$temp = "|".$linkopts['amd'].":".$linkopts['year'].":".$linkopts['month'].":".$linkopts['day'];
 			}
 			$uuid = randnum();	
 			$output = $uuid.",".$user.",".generateRandomString().",".generateRandomString().",".$port.",".$temp."\n";
@@ -304,7 +304,7 @@ if ( isset($linkopts['add_dataset']) ) {
 				if ( $temp[$i] === "" ) { 
 					continue; 
 				}
-				$temp2 = explode("-", $temp[$i]);
+				$temp2 = explode(":", $temp[$i]);
 				$amd = $temp2[0]; $year = $temp2[1]; $month = $temp2[2]; $day = $temp2[3];
 				$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2";
 				if ( !file_exists($arcname) ) { die("***FATAL: Archive $arcname not found. Aborting."); }
@@ -464,7 +464,7 @@ foreach ($basedir as $amd) {
 							}
 
 
-							if ( (( $activeamd === $amd ) or ( $activeamd === "nothing" )) and ( strrpos($datasets, $amd."-".$year."-".$month."-".$day) === false  ) ) {
+							if ( (( $activeamd === $amd ) or ( $activeamd === "nothing" )) and ( strrpos($datasets, $amd.":".$year.":".$month.":".$day) === false  ) ) {
 								echo "        <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&check=true".$datasetsurl).
 									"\">Add to dataset</a> \n";
 							} else {
@@ -499,7 +499,7 @@ if ( $datasets <> "" ) {
 		if ( $temp[$i] === "" ) { 
 			continue; 
 		}
-		$temp2 = explode("-", $temp[$i]);
+		$temp2 = explode(":", $temp[$i]);
 		echo $temp2[0]." ".$temp2[1]."/".$temp2[2]."/".$temp2[3]." <a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$temp2[0]."&year=".$temp2[1]."&month=".$temp2[2]."&day=".$temp2[3]."&uncheck=true".$datasetsurl)."\">Uncheck</a><br/>\n";
 	}
 	echo "<br/><a href=\"?link=".base64_encode("rand=".randnum()."&add_dataset=true".$datasetsurl).
@@ -533,7 +533,7 @@ if ( file_exists($filename) ) {
 				if ( $temp[$i] === "" ) { 
 					continue; 
 				}
-				$temp2 = explode("-", $temp[$i]);
+				$temp2 = explode(":", $temp[$i]);
 				echo $temp2[0]." ".$temp2[1]."/".$temp2[2]."/".$temp2[3]."<br/>\n";
 			}
 			echo "<a onclick=\"javascript:return confirm('$notyours\\nRemove active dataset:".str_replace("|","\\n",$data[5])."\\non port: $data[4]');\" href=\"?link=".base64_encode("rand=".randnum()."&"."remove_dataset=".$data[0])."\">";
