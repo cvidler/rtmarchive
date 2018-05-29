@@ -22,9 +22,9 @@ Long term archiving system from rtm data files produced by Dynatrace DCRUM
 - xsltproc
 
 Tested against:
-- DCRUM 12.3, 12.4
-- RHEL 7.2
-- CentOS 7.1, 7.2
+- DCRUM 12.3, 12.4, 2017
+- RHEL 7.2-4
+- CentOS 7.1-4
 
 ## Usage
 
