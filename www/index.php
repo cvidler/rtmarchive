@@ -358,7 +358,7 @@ function getSymbolByQuantity($bytes) {
 		$exp = floor(log($bytes)/log(1024));
 		return sprintf('%.2f'.$symbols[$exp], ($bytes/pow(1024, floor($exp))));
 	} else {
-		return "B";
+		return "NaN";
 	}
 }
 
