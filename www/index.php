@@ -290,16 +290,26 @@ if ( isset($linkopts['add_dataset']) ) {
 			} else { 
 				$temp = "|".$linkopts['amd'].":".$linkopts['year'].":".$linkopts['month'].":".$linkopts['day'];
 			}
-			$uuid = randnum();			// TODO this isn't tested to be unique!
+
+			// create a unique temp folder to extract to.
+			while (1) {
+				$uuid = randnum();
+				$tempdir = BASEDIR.".temp/".$uuid;
+				if ( !file_exists($tempdir) ) { break; }
+			}
 			$output = $uuid.",".$user.",".generateRandomString().",".generateRandomString().",".$port.",".$temp."\n";
 	
 			fwrite($file, $output);
 			fclose($file);
 			// create temp dir and extract archives to it
-			$tempdir = BASEDIR.".temp/".$uuid;		// TODO test if exists and recreate if needed. see above.
 			mkdir($tempdir, 0777, true);
 			$temp = explode("|", $temp);
 			$count = count($temp);
+
+			//setup for long running process
+			ignore_user_abort(true);
+			set_time_limit(0);
+
 			for ( $i = 0; $i < $count; $i++) {
 				if ( $temp[$i] === "" ) { 
 					continue; 
