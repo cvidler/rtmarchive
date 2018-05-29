@@ -290,13 +290,13 @@ if ( isset($linkopts['add_dataset']) ) {
 			} else { 
 				$temp = "|".$linkopts['amd'].":".$linkopts['year'].":".$linkopts['month'].":".$linkopts['day'];
 			}
-			$uuid = randnum();	
+			$uuid = randnum();			// TODO this isn't tested to be unique!
 			$output = $uuid.",".$user.",".generateRandomString().",".generateRandomString().",".$port.",".$temp."\n";
 	
 			fwrite($file, $output);
 			fclose($file);
 			// create temp dir and extract archives to it
-			$tempdir = BASEDIR.".temp/".$uuid;
+			$tempdir = BASEDIR.".temp/".$uuid;		// TODO test if exists and recreate if needed. see above.
 			mkdir($tempdir, 0777, true);
 			$temp = explode("|", $temp);
 			$count = count($temp);
@@ -310,6 +310,11 @@ if ( isset($linkopts['add_dataset']) ) {
 				if ( !file_exists($arcname) ) { die("***FATAL: Archive $arcname not found. Aborting."); }
 				#extract files
 				`cd $tempdir && /usr/bin/tar -xjf $arcname --exclude='./conf' --transform='s/.*\///'`;
+				echo "<br>extracted $arcname\n";
+				echo str_pad('',4096)."\n";         		
+				ob_flush();
+        		flush();
+        		//sleep(2);
 				#extract config files
 				`mkdir $tempdir/conf && cd $tempdir/conf && /usr/bin/tar -xjf $arcname ./conf/ --transform='s/.*\///'`;
 				#remove lst files
