@@ -7,7 +7,7 @@ $debug = 0;
 // Script below, do not edit.
 session_start();
 
-if ( isset($_GET['clear']) ) {
+if ( isset($_GET['clearsearch']) ) {
 	unset($_SESSION['searchresults']);
 	unset($_SESSION['searchallmatches']);
 }
@@ -21,6 +21,7 @@ if ( !is_dir(BASEDIR) ) {
 
 // bomb out back to the index if search text is blank
 if ( ! isset($_GET['searchtxt']) or @$_GET['searchtxt'] === "" ) {
+	http_response_code(400);
 	header("Location: /");
 }
 
@@ -30,7 +31,7 @@ function outputProgress($current, $total, $text = 'Searching' ) {
 }
 
 function myFlush() {
-	echo(str_repeat(' ', 256));
+	echo(str_repeat(' ', 4096));
 	if (@ob_get_contents()) {
 		@ob_end_flush();
 	}
@@ -40,6 +41,37 @@ function myFlush() {
 function randnum() {
 	return mt_rand();
 }
+
+
+
+// handle session vars for creation of datasets
+if ( isset($_SESSION['datasets']) ) {
+	$tmpdatasets = explode("|", $_SESSION['datasets']); 
+}
+
+if ( isset($_GET['check']) ) {
+	$count = count($tmpdatasets);
+	$tmpdatasets[$count + 1] = urldecode($_GET['amd']).":".$_GET['year'].":".$_GET['month'].":".$_GET['day'];
+	sort($tmpdatasets);
+}
+
+if ( isset($_GET['uncheck']) ) {
+
+	$count = count($tmpdatasets);
+	for ( $i = 0; $i < $count; $i++ ) {
+		$temp = urldecode($_GET['amd']).":".$_GET['year'].":".$_GET['month'].":".$_GET['day'];
+		if ( $tmpdatasets[$i] === $temp ) { 
+			unset($tmpdatasets[$i]); array_values($tmpdatasets); 
+		}
+	}
+	sort($tmpdatasets);
+}
+
+$datasets = implode("|", $tmpdatasets);
+$_SESSION['datasets'] = $datasets;
+//echo $datasets;
+
+
 
 
 //echo $_GET['searchtxt'];
@@ -81,12 +113,13 @@ function css_getclass(name,createifnotfound){
 <td colspan="1" align="right"><form action="search.php">Search IP/Software Service: <input type="text" name="searchtxt" size="40" value="<?php echo $searchtxt; ?>"/><input type="submit" value="Search"/></form></td>
 </tr>
 <tr><td colspan="2">
-<b>Search results for query: </b>"<?php echo $searchtxt; ?>" - <a href="?clear=true">Clear Search Results</a>
+<b>Search results for query: </b>"<?php echo $searchtxt; ?>" - <a href="?clearsearch=true">Clear Search Results</a>
 </td></tr>
 <?php
 
 if ( isset($_SESSION['searchresults']) && ($_SESSION['searchstring'] == $searchtxt) ) {
 	//search already run, so existing results.
+	echo "<!-- reloaded search results from session -->";
 	$ahits = $_SESSION['searchresults'];
 	$temparr = $_SESSION['searchallmatches'];
 	$searchtxt = $_SESSION['searchstring'];
@@ -254,7 +287,7 @@ if ( $allmatches === "" ) {
 		echo "<ul>\n";
 		foreach ($dates as $date => $data) {
 			$dpart = explode("-",$date); $year = $dpart[0]; $month = $dpart[1]; $day = $dpart[2];
-			echo "<li><a href=\"/?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&check=true".$datasetsurl)."\">$date</a> - ".implode(", ",$data)."</li>\n";
+			echo "<li><a href=\"?searchtxt=".urlencode($searchtxt)."&amd=".urlencode($amd)."&year=".$year."&month=".$month."&day=".$day."&check=true"."\">$date</a> - ".implode(", ",$data)."</li>\n";
 		}
 		echo "</ul>\n";
 		echo "</li>\n";
