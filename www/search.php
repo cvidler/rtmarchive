@@ -5,6 +5,7 @@ define("BASEDIR", "/var/spool/rtmarchive/");    // base directory of the archive
 $debug = 0;
 
 // Script below, do not edit.
+session_start();
 
 if ( !is_dir(BASEDIR) ) {
 	echo "***FATAL: ".BASEDIR." does not exist.\n";
@@ -29,6 +30,10 @@ function myFlush() {
 		@ob_end_flush();
 	}
 	flush();
+}
+
+function randnum() {
+	return mt_rand();
 }
 
 
@@ -232,7 +237,8 @@ if ( $allmatches === "" ) {
 		echo "<li>".$amd."\n";
 		echo "<ul>\n";
 		foreach ($dates as $date => $data) {
-			echo "<li>$date - ".implode(", ",$data)."</li>\n";
+			$dpart = explode("-",$date); $year = $dpart[0]; $month = $dpart[1]; $day = $dpart[2];
+			echo "<li><a href=\"/?link=".base64_encode("rand=".randnum()."&"."amd=".$amd."&year=".$year."&month=".$month."&day=".$day."&check=true".$datasetsurl)."\">$date</a> - ".implode(", ",$data)."</li>\n";
 		}
 		echo "</ul>\n";
 		echo "</li>\n";

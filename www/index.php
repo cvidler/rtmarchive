@@ -6,6 +6,7 @@ define("NUMPORTS",10);				// "
 
 
 // Script below, do not edit.
+session_start();
 
 if ( !is_dir(BASEDIR) ) {
 	echo "***FATAL: ".BASEDIR." does not exist.\n";
@@ -164,9 +165,15 @@ if ($username != "") { $user = $username; }
 
 // multi select data set code
 $tmpdatasets = ""; $datasets = "";
-if ( isset($linkopts['datasets']) ) { 
-	$tmpdatasets = explode("|", $linkopts['datasets']); 
+if ( isset($_GET['clear']) ) {
+	$_SESSION['datasets'] = "";
 }
+//if ( isset($linkopts['datasets']) ) { 
+if ( isset($_SESSION['datasets']) ) {
+	//$tmpdatasets = explode("|", $linkopts['datasets']); 
+	$tmpdatasets = explode("|", $_SESSION['datasets']); 
+}
+echo "<!-- ".session_id()." - ".$_SESSION['datasets']." -->\n";
 
 if ( isset($linkopts['check']) ) {
 	$count = count($tmpdatasets);
@@ -188,9 +195,10 @@ if ( isset($linkopts['uncheck']) ) {
 	
 $datasets = implode("|", $tmpdatasets);
 $datasetsurl = "";
-if ( $datasets <> "" ) { 
-	$datasetsurl = "&datasets=".$datasets; 
-}
+//if ( $datasets <> "" ) { 
+//	$datasetsurl = "&datasets=".$datasets; 
+//}
+$_SESSION['datasets'] = $datasets;
 
 
 
@@ -337,6 +345,7 @@ if ( isset($linkopts['add_dataset']) ) {
 				array_map('unlink', glob("$tempdir/*.lst"));
 			}
 		}
+		$_SESSION['datasets'] = ""; $datasets = "";
 		unset($port);
 		unset($lastport);
 		unset($usedports);
@@ -532,7 +541,7 @@ if ( $datasets <> "" ) {
 		"\">Add to Archive AMD</a><br/>\n";
 }
 ?>
-<p><font size="-1"><a href="?">Clear</a></font></p>
+<p><font size="-1"><a href="?clear=true">Clear</a></font></p>
 </td>
 
 <td width="50%" valign="top">
