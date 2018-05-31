@@ -270,6 +270,13 @@ if ( isset($linkopts['add_dataset']) ) {
 			}
 			$temp = explode(",", $buffer);
 			$usedports[$temp[4]] = 1;
+
+			// check if same user/dataset already exists
+			//echo "$user,$datasets:$temp[0],$temp[1],$temp[2],$temp[3],$temp[4],$temp[5],$temp[6]\n";
+			if (($temp[1] == $user) && ($temp[5] == $datasets)) {
+				//match found, abort
+				die("***ABORT: Matching dataset already exists, not extracting again.");
+			}
 		}
 
 		// find first unused port
@@ -324,7 +331,6 @@ if ( isset($linkopts['add_dataset']) ) {
 				echo str_pad('',4096)."\n";         		
 				ob_flush();
         		flush();
-        		//sleep(2);
 				#extract config files
 				`mkdir $tempdir/conf && cd $tempdir/conf && /usr/bin/tar -xjf $arcname ./conf/ --transform='s/.*\///'`;
 				#remove lst files
