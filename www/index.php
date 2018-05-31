@@ -173,7 +173,7 @@ if ( isset($_SESSION['datasets']) ) {
 	//$tmpdatasets = explode("|", $linkopts['datasets']); 
 	$tmpdatasets = explode("|", $_SESSION['datasets']); 
 }
-echo "<!-- ".session_id()." - ".$_SESSION['datasets']." -->\n";
+//echo "<!-- ".session_id()." - ".$_SESSION['datasets']." -->\n";
 
 if ( isset($linkopts['check']) ) {
 	$count = count($tmpdatasets);
