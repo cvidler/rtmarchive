@@ -45,6 +45,12 @@ function randnum() {
 
 
 // handle session vars for creation of datasets
+// multi select data set code
+$tmpdatasets = ""; $datasets = "";
+if ( isset($_GET['clear']) ) {
+	$_SESSION['datasets'] = "";
+}
+
 if ( isset($_SESSION['datasets']) ) {
 	$tmpdatasets = explode("|", $_SESSION['datasets']); 
 }
@@ -298,6 +304,25 @@ echo "</ul>\n";
 ?>
 </td>
 </tr>
+<tr><td>
+<?php 
+if ( $datasets <> "" ) {
+	echo "<h3>Create Dataset</h3>\n";
+	$temp = explode("|", $datasets);
+	$count = count($temp);
+	for ( $i = 0; $i < $count; $i++) {
+		if ( $temp[$i] === "" ) { 
+			continue; 
+		}
+		$temp2 = explode(":", $temp[$i]);
+		echo $temp2[0]." ".$temp2[1]."/".$temp2[2]."/".$temp2[3]." <a href=\"?amd=".urlencode($temp2[0])."&year=".$temp2[1]."&month=".$temp2[2]."&day=".$temp2[3]."&uncheck=true"."\">Uncheck</a><br/>\n";
+	}
+	echo "<br/><a href=\"/?link=".base64_encode("rand=".randnum()."&add_dataset=true".$datasetsurl).
+		"\">Add to Archive AMD</a><br/>\n";
+}
+?>
+<p><font size="-1"><a href="?clear=true">Clear</a></font></p>
+</td></tr>
 </table>
 
 
