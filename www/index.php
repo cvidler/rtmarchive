@@ -361,7 +361,7 @@ if ( isset($linkopts['add_dataset']) ) {
 		unset($i);
 		unset($file);
 		unset($uuid);
-		header("Location: /");
+		//header("Location: /");
 	}
 }
 
