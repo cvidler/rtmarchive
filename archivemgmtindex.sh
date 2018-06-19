@@ -23,6 +23,14 @@ JOBS=`which jobs`
 WC=`which wc`
 TOUCH=`which touch`
 
+function debugecho {
+	dbglevel=${2:-1}
+	if [ $DEBUG -ge $dbglevel ]; then techo "*** DEBUG[$dbglevel]: $1"; fi
+}
+
+function techo {
+	echo -e "[`date -u`]: $1" 
+}
 
 # command line arguments
 OPTS=1
@@ -60,15 +68,6 @@ if [ $OPTS -eq 0 ]; then
 	exit 0
 fi
 
-
-function debugecho {
-	dbglevel=${2:-1}
-	if [ $DEBUG -ge $dbglevel ]; then techo "*** DEBUG[$dbglevel]: $1"; fi
-}
-
-function techo {
-	echo -e "[`date -u`]: $1" 
-}
 
 tstart=`date -u +%s`
 techo "rtmarchive Archive Search Indexer Script"

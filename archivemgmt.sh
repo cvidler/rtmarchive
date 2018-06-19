@@ -29,6 +29,15 @@ JOBS=`which jobs`
 WC=`which wc`
 AMDNAME=""
 
+function debugecho {
+	dbglevel=${2:-1}
+	if [ $DEBUG -ge $dbglevel ]; then techo "*** DEBUG[$dbglevel]: $1"; fi
+}
+
+function techo {
+	echo -e "[`date -u`][$AMDNAME]: $1" 
+}
+
 # command line arguments
 OPTS=1
 while getopts ":dhb:" OPT; do
@@ -61,15 +70,6 @@ if [ $OPTS -eq 0 ]; then
 fi
 
 
-
-function debugecho {
-	dbglevel=${2:-1}
-	if [ $DEBUG -ge $dbglevel ]; then techo "*** DEBUG[$dbglevel]: $1"; fi
-}
-
-function techo {
-	echo -e "[`date -u`][$AMDNAME]: $1" 
-}
 
 tstart=`date -u +%s`
 techo "rtmarchive Archive Management Script"
