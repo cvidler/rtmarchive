@@ -12,6 +12,21 @@ if ( !is_dir(BASEDIR) ) {
 	echo "***FATAL: ".BASEDIR." does not exist.\n";
 }
 
+function checkcurrentdata($amd) {
+	$data = "";
+	$year = date("Y");
+	$month = date("m");
+	$day = date("d");	
+	$filename = BASEDIR.$amd."/".$year."/".$month."/".$day;
+
+	if ( file_exists($filename) ) {
+		$data = "";
+	} else {
+		$data = " <font color=red>No data for today! Check collection logs.</font>";
+	}
+	return $data;
+}
+
 
 function getdaydata($amd, $year, $month, $day, $dataset = "ss") {
 	// return the extracted zdata stats for browsing
@@ -425,8 +440,8 @@ $basedir = scandir(BASEDIR);
 foreach ($basedir as $amd) {
 	if (file_exists(BASEDIR.$amd."/uuid.lst")) {
 		echo " <li><a href=\"?link=".base64_encode("rand=".randnum()."&"."amd=".$amd.$datasetsurl)."\">";
-		if ( !($linkopts['amd'] === $amd) ) { echo $amd."</a></li>\n"; continue; }
-		echo "<b>".$amd."</b></a>\n";
+		if ( !($linkopts['amd'] === $amd) ) { echo $amd."</a>".checkcurrentdata($amd)."</li>\n"; continue; }
+		echo "<b>".$amd."</b>".checkcurrentdata($amd)."</a>\n";
 		$years = scandir(BASEDIR.$amd);
 		foreach ($years as $year) {
 			if ( !is_numeric($year) || !file_exists(BASEDIR.$amd."/".$year."/softwareservice.lst") ) { 
