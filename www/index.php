@@ -18,11 +18,16 @@ function checkcurrentdata($amd) {
 	$month = date("m");
 	$day = date("d");	
 	$filename = BASEDIR.$amd."/".$year."/".$month."/".$day;
+	$flag = BASEDIR.$amd."/decomissioned.flag";
 
 	if ( file_exists($filename) ) {
 		$data = "";
 	} else {
 		$data = " <font color=red>No data for today! Check collection logs.</font>";
+	}
+
+	if ( file_exists($flag) ) {
+		$data = " <font color=grey>Decomissioned ".date("F d Y",filemtime($flag))."</font>";
 	}
 	return $data;
 }
