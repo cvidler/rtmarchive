@@ -5,7 +5,7 @@
 
 BASEDIR=/var/spool/rtmarchive
 AMDNAME=${1:-}
-RTMARCHIVEUSER=data_mine
+RTMARCHIVEUSER=rtmarchive
 
 
 

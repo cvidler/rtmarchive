@@ -23,13 +23,20 @@ function checkcurrentdata($amd) {
 	if ( file_exists($filename) ) {
 		$data = "";
 	} else {
-		$data = " <font color=red>No data for today! Check collection logs.</font>";
+		$data = " <font color=red>No data for today!</font> <a href=\"?diag&diagamd=".$amd."\">Diagnostics</a>";
 	}
 
 	if ( file_exists($flag) ) {
 		$data = " <font color=grey>Decomissioned ".date("F d Y",filemtime($flag))."</font>";
 	}
 	return $data;
+}
+
+function run_diags($amd) {
+
+	$diagdata = shell_exec("/opt/rtmarchive/amd_diag.sh ".$amd);
+	echo "<h2>Diagnostics for ".$amd."</h2><br/><pre>".$diagdata."</pre>";
+
 }
 
 
@@ -562,6 +569,14 @@ if ( $datasets <> "" ) {
 }
 ?>
 <p><font size="-1"><a href="?clear=true">Clear</a></font></p>
+<?php
+// diag request
+if ( isset($_GET['diag']) ) {
+	if ( isset($_GET['diagamd']) ) {
+		run_diags($_GET['diagamd']);
+	}
+}
+?>
 </td>
 
 <td width="50%" valign="top">
