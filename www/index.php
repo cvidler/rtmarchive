@@ -11,14 +11,14 @@ session_start();
 if ( !is_dir(BASEDIR) ) {
 	echo "***FATAL: ".BASEDIR." does not exist.\n";
 }
-
+l
 function checkcurrentdata($amd) {
 	$data = "";
 	$year = date("Y");
 	$month = date("m");
 	$day = date("d");	
 	$filename = BASEDIR.$amd."/".$year."/".$month."/".$day;
-	$flag = BASEDIR.$amd."/decomissioned.flag";
+	$flag = BASEDIR.$amd."/decommissioned.flag";
 
 	if ( file_exists($filename) ) {
 		$data = "";
@@ -27,7 +27,7 @@ function checkcurrentdata($amd) {
 	}
 
 	if ( file_exists($flag) ) {
-		$data = " <font color=grey>Decomissioned ".date("F d Y",filemtime($flag))."</font>";
+		$data = " <font color=grey>Decommissioned ".date("F d Y",filemtime($flag))."</font>";
 	}
 	return $data;
 }
