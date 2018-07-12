@@ -11,7 +11,7 @@ session_start();
 if ( !is_dir(BASEDIR) ) {
 	echo "***FATAL: ".BASEDIR." does not exist.\n";
 }
-l
+
 function checkcurrentdata($amd) {
 	$data = "";
 	$year = date("Y");
