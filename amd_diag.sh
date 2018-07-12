@@ -144,8 +144,7 @@ if [ -s $BASEDIR/$AMDNAME/currdir.lst ]; then echo "exists! WARNING"; elif [ -f 
 
 
 # dump out filter log entries, no testing done here
-echo "Log entries from archiecho ""
-vemgmt.sh and archivemgmtindex.sh. INFO"
+echo "Log entries from archivemgmt.sh and archivemgmtindex.sh. INFO"
 archivemgmtlog $AMDNAME
 
 
