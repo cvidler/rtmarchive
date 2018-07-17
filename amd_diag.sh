@@ -4,14 +4,48 @@
 #config
 
 BASEDIR=/var/spool/rtmarchive
-AMDNAME=${1:-}
 RTMARCHIVEUSER=rtmarchive
-
 
 
 #setup
 
-if [ "$AMDNAME" == "" ]; then echo "no AMD name specified. Aborting"; exit 255; fi
+
+# command line arguments
+OPTS=0
+while getopts ":dhb:a:" OPT; do
+	case $OPT in
+		h)
+			OPTS=0  #show help
+			;;
+		d)
+			DEBUG=$((DEBUG + 1))
+			;;
+		b)
+			BASEDIR=$OPTARG
+			;;
+		a)
+			AMDNAME=$OPTARG
+			OPTS=1
+			;;
+		\?)
+			OPTS=0 #show help
+			echo "*** FATAL: Invalid argument -$OPTARG."
+			;;
+		:)
+			OPTS=0 #show help
+			echo "*** FATAL: argument -$OPTARG requires parameter."
+			;;
+	esac
+done
+
+if [ $OPTS -eq 0 ]; then
+	echo -e "*** INFO: Usage: $0 [-h] [-b basearchivedir] -a amdname"
+	echo -e "-h This help. Optional"
+	echo -e "-b basearchivedir Archive directory path. Optional. Default: $BASEDIR"
+	echo -e "-a amdname Name of AMD to run diagnostics against. Required."
+	exit 0
+fi
+#if [ "$AMDNAME" == "" ]; then echo "no AMD name specified. Aborting"; exit 255; fi
 
 
 

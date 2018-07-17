@@ -34,7 +34,7 @@ function checkcurrentdata($amd) {
 
 function run_diags($amd) {
 
-	$diagdata = shell_exec("/opt/rtmarchive/amd_diag.sh ".$amd);
+	$diagdata = shell_exec("/opt/rtmarchive/amd_diag.sh -a ".$amd);
 	echo "<h2>Diagnostics for ".$amd."</h2><br/><pre>".$diagdata."</pre>";
 
 }
