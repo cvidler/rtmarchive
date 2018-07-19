@@ -361,13 +361,27 @@ if ( isset($linkopts['add_dataset']) ) {
 				$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2";
 				if ( !file_exists($arcname) ) { die("***FATAL: Archive $arcname not found. Aborting."); }
 				#extract files
-				`cd $tempdir && /usr/bin/tar -xjf $arcname --exclude='./conf' --transform='s/.*\///'`;
-				echo "<br>extracted $arcname\n";
+				unset($output);
+				$results = exec("cd $tempdir && /usr/bin/tar -Uxjf $arcname --exclude='./conf' --transform='s/.*\///'", $output, $rc);
+				if ( $rc == 0 ) {
+					echo "<br/>extracted $arcname\n";
+				} else {
+					echo "<br/> Failed to extract $arcname to $tempdir RC:$rc<br/><pre>".implode("\n",$output)."</pre>\n";
+				}
 				echo str_pad('',4096)."\n";         		
 				ob_flush();
         		flush();
 				#extract config files
-				`mkdir $tempdir/conf && cd $tempdir/conf && /usr/bin/tar -xjf $arcname ./conf/ --transform='s/.*\///'`;
+				unset ($output);
+				$results = exec("mkdir -p $tempdir/conf && cd $tempdir/conf && /usr/bin/tar -Uxjf $arcname ./conf/ --transform='s/.*\///'", $output, $rc);
+				if ( $rc == 0 ) {
+					echo "<br/>extracted config files from $arcname\n";
+				} else {
+					echo "<br/> Failed to extract config files from $arcname to $tempdir RC:$rc<br/><pre>".implode("\n",$output)."</pre>\n";
+				}
+				echo str_pad('',4096)."\n";
+				ob_flush();
+				flush();
 				#remove lst files
 				array_map('unlink', glob("$tempdir/*.lst"));
 			}
