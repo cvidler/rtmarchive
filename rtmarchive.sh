@@ -30,7 +30,7 @@ function debugecho {
 }
 
 function techo {
-	echo -e "[`date -u`]: $1" 
+	echo -e "[`date -u "+%Y-%m-%d %H:%M:%S"`]: $1" 
 }
 
 tstart=`date -u +%s`
@@ -137,6 +137,8 @@ while IFS=$',' read -r p q; do
 		debugecho "RUNCMD: $RUNCMD"
 		set +e
 		$SCRIPTDIR/archiveamd.sh -n "${p}" -u "${q}" -b "$BASEDIR" $DODEBUG 
+		RC=$?
+		if [ $RC -ne 0 ]; then techo "\e[33m***WARNING:\e[0m ${p} archive collection aborted abnormally!" ; fi
 		set -e
 	) &
 	(( ++running ))

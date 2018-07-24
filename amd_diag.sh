@@ -50,6 +50,15 @@ fi
 
 
 #functions
+function debugecho {
+	dbglevel=${2:-1}
+	if [ $DEBUG -ge $dbglevel ]; then techo "*** DEBUG[$dbglevel]: $1"; fi
+}
+
+function techo {
+	echo -e "[`date -u "+%Y-%m-%d %H:%M:%S"`]: $1" 
+}
+
 function rumclog {
 	echo -e "filtered queryrumc.log\n----"
 	grep "$1" /var/log/rtmarchive/queryrumc.log | tail
@@ -139,17 +148,17 @@ function permtestfile {
 
 # main code
 
-echo "Diagnostics Test on $AMDNAME"
+techo "Diagnostics Test on $AMDNAME"
 echo ""
 
 
 #test if in amdlist
 RETURN=`grep "$AMDNAME" /etc/amdlist.cfg`
 #echo "[$RETURN]"
-echo -n "RUM Console check "
-if [[ "$RETURN" == "" ]]; then echo "AMD $AMDNAME not in amdlist.cfg, Is it in RUM Console? FAIL"; rumclog $AMDNAME ; fi
-if [[ $RETURN =~ D,.* ]]; then echo "AMD $AMDNAME, disabled in amdlist.cfg, not reachable/up/wrong credentials? FAIL"; rumclog $AMDNAME ; fi
-if [[ $RETURN =~ A,.* ]]; then echo "AMD $AMDNAME in amd list and active. OK"; fi
+techo "RUM Console check "
+if [[ "$RETURN" == "" ]]; then techo "AMD $AMDNAME not in amdlist.cfg, Is it in RUM Console? FAIL"; techo "$(rumclog $AMDNAME)" ; fi
+if [[ $RETURN =~ D,.* ]]; then techo "AMD $AMDNAME, disabled in amdlist.cfg, not reachable/up/wrong credentials? FAIL"; techo "$(rumclog $AMDNAME)" ; fi
+if [[ $RETURN =~ A,.* ]]; then techo "AMD $AMDNAME in amd list and active. OK"; fi
 
 
 #test if dir present
@@ -159,30 +168,31 @@ if [ ! -d $BASEDIR/$AMDNAME ]; then echo "doesn't exist! FAIL"; else echo "prese
 
 #test dir ownership/permissions
 echo ""
-echo -n "AMD archive directory checking all directory permissions... may take a while... "
+techo "AMD archive directory checking all directory permissions... may take a while... "
 temp=`testdirectories $BASEDIR/$AMDNAME`
-if [[ "$temp" == "" ]]; then echo "All permissions correct. OK"; else echo ""; fi
-echo -e "$temp"
+if [[ "$temp" == "" ]]; then techo "All permissions correct. OK"; else echo ""; fi
+techo "$temp"
 
 
 #test if prevdir.lst present
 echo ""
-echo -n "Previous state file $BASEDIR/$AMDNAME/prevdir.lst "
-if [ ! -r $BASEDIR/$AMDNAME/prevdir.lst ]; then echo "Not present/not readable."; rtmarchivelog $AMDNAME ; fi
-if [ ! -s $BASEDIR/$AMDNAME/prevdir.lst ]; then echo "Previous state file empty."; rtmarchivelog $AMDNAME ; fi
+techo "Previous state file $BASEDIR/$AMDNAME/prevdir.lst "
+if [ ! -r $BASEDIR/$AMDNAME/prevdir.lst ]; then techo "Not present/not readable."; techo "$(rtmarchivelog $AMDNAME)" ; fi
+if [ ! -s $BASEDIR/$AMDNAME/prevdir.lst ]; then techo "Previous state file empty."; techo "$(rtmarchivelog $AMDNAME)" ; fi
 
 #test if currdir.lst present, indicates failed last run.
 echo ""
-echo -n "Current state file $BASEDIR/$AMDNAME/currdir.lst "
-if [ -s $BASEDIR/$AMDNAME/currdir.lst ]; then echo "exists! WARNING"; elif [ -f $BASENAME/$AMDNAME/currdir.lst ]; then echo "Current state file empty!!! FAIL"; else echo "OK"; fi
+techo "Current state file $BASEDIR/$AMDNAME/currdir.lst "
+if [ -s $BASEDIR/$AMDNAME/currdir.lst ]; then techo "exists! WARNING"; elif [ -f $BASENAME/$AMDNAME/currdir.lst ]; then techo "Current state file empty!!! FAIL"; else techo "OK"; fi
 
 
 # dump out filter log entries, no testing done here
-echo "Log entries from archivemgmt.sh and archivemgmtindex.sh. INFO"
-archivemgmtlog $AMDNAME
+techo "Log entries from archivemgmt.sh and archivemgmtindex.sh. INFO"
+techo "$(archivemgmtlog $AMDNAME)"
 
 
 # finished
 
 echo ""
-echo "Diagnostics complete."
+techo "Diagnostics complete."
+

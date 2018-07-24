@@ -58,10 +58,10 @@ function test {
 function debugecho {
 	dbglevel=${2:-1}
 	if [ $DEBUG -ge $dbglevel ]; then techo "*** DEBUG[$dbglevel]: $1"; fi
-}
+}r
 
 function techo {
-	echo -e "[`date -u`][$AMDNAME]: $1" 
+	echo -e "[`date -u "+%Y-%m-%d %H:%M:%S"`][$AMDNAME]: $1" 
 }
 
 function checksilent {
