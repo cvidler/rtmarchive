@@ -281,6 +281,14 @@ for DIR in "$BASEDIR"/*; do
 done
 wait
 
+#wait for final threads to complete
+while (( running > 0 )) ; do
+	if read -u 3 cpid ; then
+		wait $cpid
+		(( --running ))
+	fi
+done
+
 rm -f "$PIDFILE"
 
 tfinish=`date -u +%s`
