@@ -12,7 +12,7 @@ SCRIPTDIR=/opt/rtmarchive
 MAXTHREADS=$(($(nproc)*1))
 PIDFILE=/tmp/archivemgmt.pid
 DEBUG=0
-
+COMPTYPE="xz"		# TAR supported compression options bzip2, xz, gzip, compress, lzma, lzop, lzip
 
 
 
@@ -83,6 +83,15 @@ else
 	exit 1
 fi
 
+if [ ! -r $BASEDIR ]; then techo "***FATAL: Archive directory ($BASEDIR) not valid or not readable. Aborting."; exit 255; fi
+
+#prepare compression option default, if not supplied or incorrectly supplied above.
+declare -A COMPTYPES
+COMPTYPES=([bzip2]=1 [xz]=1 [gzip]=1 [compress]=1 [lzma]=1 [lzop]=1 [lzip]=1)
+if [ "$COMPTYPE" == "" ]; then COMPTYPE="bzip2"; fi
+if [[ -z "${COMPTYPES[$COMPTYPE]+_}" ]]; then COMPTYPE="bzip2"; techo "***WARNING: Invalid compression type specified defaulting to $COMPTYPE"; fi
+
+debugecho "COMPTYPE: [$COMPTYPE] "
 
 pidfifo=$(mktemp --dry-run)
 mkfifo --mode=0700 $pidfifo
@@ -144,7 +153,7 @@ for DIR in "$BASEDIR"/*; do
 				if [ $ZCOUNT -ne 0 ]; then if [ $archivedelay -gt 86400 ]; then
 
 					# check for existing archive, skip if found - don't want to overwrite archived data.
-					ARCNAME=$AMDNAME-$DATADATE.tar.bz2
+					ARCNAME=$AMDNAME-$DATADATE.tar.$COMPTYPE
 					if [ ! -w "$MONTH"/$ARCNAME ] && [ -f "$MONTH"/$ARCNAME ]; then
 						techo "\e[33m***WARNING:\e[0m Archive [$MONTH/$ARCNAME] already exists or can't write, skipping."
 						continue
@@ -227,7 +236,7 @@ for DIR in "$BASEDIR"/*; do
 
 					# archive it all
 					techo "Compressing $DAY"
-					$TAR -cjf "$MONTH"/$ARCNAME -C "$DAY" . >&2
+					$TAR --$COMPTYPE -cf "$MONTH"/$ARCNAME -C "$DAY" . >&2
 					if [ $? -eq 0 ]; then
 						#succesful, checksum the archive and clean up data files
 						$SHA512SUM $MONTH/$ARCNAME > $MONTH/$ARCNAME.sha512

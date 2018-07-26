@@ -56,7 +56,9 @@ function getdaydata($amd, $year, $month, $day, $dataset = "ss") {
 	} elseif ($dataset === "ver") {
 		$filename = $filename."/versions.lst";
 	} elseif ($dataset === "fi") {
-		$filename = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2.sha512";
+		//$filename = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2.sha512";
+		$filenames = glob(BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.*.sha512");
+		$filename = $filenames[0];
 		if ( file_exists($filename) ) {
 			$retval = "";
 			$retval = exec('sha512sum --status -c "'.$filename.'" ; echo $?');
@@ -358,11 +360,13 @@ if ( isset($linkopts['add_dataset']) ) {
 				}
 				$temp2 = explode(":", $temp[$i]);
 				$amd = $temp2[0]; $year = $temp2[1]; $month = $temp2[2]; $day = $temp2[3];
-				$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2";
+				//$arcname = BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.bz2";
+				$arcnames = glob(BASEDIR.$amd."/".$year."/".$month."/".$amd."-".$year."-".$month."-".$day.".tar.*");
+				$arcname = $arcnames[0];
 				if ( !file_exists($arcname) ) { die("***FATAL: Archive $arcname not found. Aborting."); }
 				#extract files
 				unset($output);
-				$results = exec("cd $tempdir && /usr/bin/tar -Uxjf $arcname --exclude='./conf' --transform='s/.*\///'", $output, $rc);
+				$results = exec("cd $tempdir && /usr/bin/tar -Uxaf $arcname --exclude='./conf' --transform='s/.*\///'", $output, $rc);
 				if ( $rc == 0 ) {
 					echo "<br/>extracted $arcname\n";
 				} else {
@@ -373,7 +377,7 @@ if ( isset($linkopts['add_dataset']) ) {
         		flush();
 				#extract config files
 				unset ($output);
-				$results = exec("mkdir -p $tempdir/conf && cd $tempdir/conf && /usr/bin/tar -Uxjf $arcname ./conf/ --transform='s/.*\///'", $output, $rc);
+				$results = exec("mkdir -p $tempdir/conf && cd $tempdir/conf && /usr/bin/tar -Uxaf $arcname ./conf/ --transform='s/.*\///'", $output, $rc);
 				if ( $rc == 0 ) {
 					echo "<br/>extracted config files from $arcname\n";
 				} else {
