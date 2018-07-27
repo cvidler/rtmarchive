@@ -12,7 +12,8 @@ SCRIPTDIR=/opt/rtmarchive
 MAXTHREADS=$(($(nproc)*1))
 PIDFILE=/tmp/archivemgmt.pid
 DEBUG=0
-COMPTYPE="xz"		# TAR supported compression options bzip2, xz, gzip, compress, lzma, lzop, lzip
+MAXWAITDAYS=8			# How long to wait for an incomplete collection beforce archiving it.
+COMPTYPE="bzip2"		# TAR supported compression options bzip2, xz, gzip, compress, lzma, lzop, lzip
 
 
 
@@ -105,14 +106,15 @@ for DIR in "$BASEDIR"/*; do
 
 	while (( running >= $MAXTHREADS )) ; do
 		if read -u 3 cpid ; then
+			debugecho "running threads: [$running] [$cpid]" 2
 			wait $cpid
 			(( --running ))
 		fi
 	done
-	debugecho "running threads: [$running]"
 
 	(
 	echo $BASHPID 1>&3
+	debugecho "Started thread: $BASHPID" 2
 	# only interested if it has got AMD data in it
 	if [ ! -r "$DIR/prevdir.lst" ]; then continue; fi
 	AMDNAME=`echo $DIR | $AWK ' match($0,"(.+/)+(.+)$",a) { print a[2] } ' `
@@ -146,11 +148,12 @@ for DIR in "$BASEDIR"/*; do
 				nowtime=$($DATE -u +"%s")
 				datatime=$($DATE -u -d "$DATADATE" +"%s")
 				archivedelay=$(($nowtime-$datatime))
+				maxwait=$((86400 * $MAXWAITDAYS))
 				#expected=288
 				expected=$((1440/$INTLEN))
 				debugecho "ZCOUNT: [$ZCOUNT] INTLEN: [$INTLEN] expected: [$expected] archivedelay: [$archivedelay] seconds" 2
 				
-				if [ $ZCOUNT -ne 0 ]; then if [ $archivedelay -gt 86400 ]; then
+				if ([ $ZCOUNT -gt 0 ] && [ $archivedelay -gt 86400 ]); then
 
 					# check for existing archive, skip if found - don't want to overwrite archived data.
 					ARCNAME=$AMDNAME-$DATADATE.tar.$COMPTYPE
@@ -174,8 +177,13 @@ for DIR in "$BASEDIR"/*; do
 					debugecho "ZDATA: [$ZDATA], VOLDATA: [$VOLDATA], IPDATA: [$IPDATA], NDATA: [$NDATA]" 1
 
 					if [ $NDATA -gt $ZDATA ]; then INTS=$NDATA; else INTS=$ZDATA; fi
-					if [ $INTS -lt $expected ]; then debugecho "Day not yet fully downloaded, intervals found [$INTS] expected [$expected], skipping" ; continue; fi
-
+					#if [ $INTS -lt $expected ]; then debugecho "Day not yet fully downloaded, intervals found [$INTS] expected [$expected], skipping" ; continue; fi
+					if [ $ZCOUNT -lt $expected ] && [ $archivedelay -gt $maxwait ]; then 
+						techo "$DAY not completely downloaded, but we've waited more than $MAXWAITDAYS days, archiving it anyway."  
+					else
+						techo "$DAY not yet completely downloading, waiting upto $MAXWAITDAYS to complete, skipping for now."
+						continue
+					fi
 
 					# grab version from non HS AMD zdata						
 					if [ $ZDATA -ne 0 ]; then $AWK -F" " '$1=="V" { printf("%s.%s.%s.%s", $2,$3,$4,$5) }' "$DAY"/zdata_*_t >> "$DAY"/versions.lst.tmp; fi
@@ -256,16 +264,18 @@ for DIR in "$BASEDIR"/*; do
 						#failed
 						techo "\e[33m***WARNING:\e[0m Couldn't archive data files in: $DAY, will try again next time."
 					fi
-				else
-					debugecho "DATADATE: [$DATADATE] = today, not ready to archive yet. skipping."
-				fi
-				else
+				elif [ $ZCOUNT -gt 0 ] && [ $ZCOUNT -lt $expected ] && [ $archivedelay -lt $maxwait ]; then
+					debugecho "ZCOUNT: [$ZCOUNT] not expected: [$expected], archivedelay: [$archivedelay] lt [$maxwait]"
+					techo "$DAY not yet complete, waiting upto $MAXWAITDAYS days for all data to download."
+				elif [ $ZCOUNT -eq 0 ]; then
 					#no zdata files found, test to see if truely empty, or already archived.
 					if [ ! -r "$DAY/softwareservice.lst" ]; then
 						debugecho "\e[33m***WARNING:\e[0m No zdata files in: DAY: [$DAY]." 2
 					else
 						debugecho "Already archived: DAY: [$DAY]" 2
 					fi
+				else
+					debugecho "DATADATE: [$DATADATE] = today, not ready to archive yet. skipping."
 				fi
 
 			done
@@ -274,22 +284,18 @@ for DIR in "$BASEDIR"/*; do
 	techo "Processing AMD: $AMDNAME complete."
 	) &	
 	(( ++running ))
-
-	if [ $? -ne 0 ]; then
-		techo "\e[33m***WARNING:\e[0m $AMDNAME failed archive management."
-	fi
 done
-wait
+
+rm -f "$PIDFILE"
 
 #wait for final threads to complete
 while (( running > 0 )) ; do
 	if read -u 3 cpid ; then
+		debugecho "running threads: [$running] [$cpid]" 2
 		wait $cpid
 		(( --running ))
 	fi
 done
-
-rm -f "$PIDFILE"
 
 tfinish=`date -u +%s`
 tdur=$((tfinish-tstart))
