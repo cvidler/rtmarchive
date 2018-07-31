@@ -7,7 +7,7 @@
 
 
 # config
-DEBUG=1
+DEBUG=0
 NAME=rtmarchive
 DIST=el7
 
@@ -76,7 +76,7 @@ cp ../*.xslt -t "$BUILDROOT/opt/$NAME"
 
 # tgz release archive
 BUILDPWD="`pwd`"
-TARGZ="$BUILDPWD/SOURCES/$NAME-$VERSION-$RELEASE.$DIST.$DIST.tar.gz"
+TARGZ="$BUILDPWD/SOURCES/$NAME-$VERSION-$RELEASE.$DIST.tar.gz"
 debugecho "TARGZ: [$TARGZ]"
 (
 cd $TMPDIR
@@ -98,15 +98,17 @@ SPECFILE=`awk ' { if($0=="%changelog") exit ; else print $0; }' "SPEC/$NAME-buil
 SPECFILE="${SPECFILE}\n\n\n%changelog\n${CLOGDETAIL}"
 debugecho "SPECFILE: [$SPECFILE]" 3
 TMPSPEC=`mktemp`
+debugecho "TMPSPEC [$TMPSPEC]" 2
 echo -e "$SPECFILE" > $TMPSPEC
 
 
 # call rpmbuild to package tgz and SPEC
-#rpmbuild -ba --define "_topdir $(pwd)" --define "_tmpdir %topdir/tmp" --define "dist .$DIST" --define "version $VERSION" --define "release $RELEASE"  "$TMPSPEC"
-rpmbuild -ba --define "_topdir $(pwd)" --define "_tmpdir %topdir/tmp" --define "version $VERSION" --define "release $RELEASE"  "$TMPSPEC"
+rpmbuild -ba --define "_topdir $(pwd)" --define "_tmpdir %topdir/tmp" --define "dist .$DIST" --define "version $VERSION" --define "release $RELEASE"  "$TMPSPEC"
+RC=$?
+#rpmbuild -ba --define "_topdir $(pwd)" --define "_tmpdir %topdir/tmp" --define "version $VERSION" --define "release $RELEASE"  "$TMPSPEC"
 
-#debug
-#read -p "paused, press enter"
+#pause on failure
+if [ $RC -ne 0 ]; then echo "rpmbuild failed temp source still present at $TARGZ, SPEC at $TMPSPEC"; read -p "paused, press enter"; fi
 
 #clean up SOURCES
 rm -f $TMPSPEC

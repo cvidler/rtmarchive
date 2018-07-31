@@ -4,17 +4,18 @@
 %define        __spec_install_post %{nil}
 %define          debug_package %{nil}
 %define        __os_install_post %{_dbpath}/brp-compress
-%define	dist .el7
+%define	dist el7
+%define _rpmfilename %%{ARCH}/%%{NAME}-%%{VERSION}-%%{RELEASE}.el7.%%{ARCH}.rpm
 
 Summary: A series of scripts and PHP code to archive AMD raw data for long term, and be able to present it to a CAS for re-processing. For use with Dynatrace Data Center Real User Monitoring.
 Name: rtmarchive
 Version: %{version}
-Release: %{release}%{dist}
-License: GPL-2.0
-SOURCE0 : %{name}-%{version}-%{release}.tar.gz
+Release: %{release}
+License: GPL-3.0
+SOURCE0 : %{name}-%{version}-%{release}.%{dist}.tar.gz
 URL: https://github.com/cvidler/rtmarchive
 BuildArch: x86_64
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}.%{dist}-root
 Requires: httpd >= 2.4,php >= 5.4,bash >= 4.2,curl,tar,bzip2,gawk,wget,gzip,coreutils,cronie,checkpolicy,policycoreutils,policycoreutils-python,vim-common,bc,logrotate
 Requires(pre): shadow-utils,glibc-common
 Requires(postun): shadow-utils
