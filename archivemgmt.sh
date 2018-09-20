@@ -186,7 +186,7 @@ for DIR in "$BASEDIR"/*; do
 				maxwait=$((86400 * $MAXWAITDAYS))
 				#expected=288
 				expected=$((1440/$INTLEN))
-				debugecho "ZCOUNT: [$ZCOUNT] INTLEN: [$INTLEN] expected: [$expected] archivedelay: [$archivedelay] seconds" 2
+				debugecho "ZCOUNT: [$ZCOUNT] INTLEN: [$INTLEN] expected: [$expected] archivedelay: [$archivedelay] nowtime: [$nowtime] datatime: [$datatime]" 2
 				
 				if ([ $ZCOUNT -gt 0 ] && [ $archivedelay -gt 86400 ]) || [ $FORCEUPDATE ]; then
 
@@ -209,8 +209,8 @@ for DIR in "$BASEDIR"/*; do
 					if [ $ZCOUNT -lt $expected ] && [ $archivedelay -gt $maxwait ]; then 
 						techo "$DAY not completely downloaded, but we've waited more than $MAXWAITDAYS days, archiving it anyway."  
 					else
-						techo "$DAY not yet completely downloading, waiting upto $MAXWAITDAYS to complete, skipping for now."
-						continue
+						techo "$DAY not yet completely downloading, waiting upto $MAXWAITDAYS days to complete, skipping for now."
+						if [ $FORCEUPDATE -eq 0 ]; then continue; fi
 					fi
 
 					# check for existing archive, skip if found - don't want to overwrite archived data.
@@ -232,7 +232,7 @@ for DIR in "$BASEDIR"/*; do
 					if [ $VOLDATA -ne 0 ]; then $AWK -F" " '$1=="#Producer:" { sub("ndw.","" , $2); print $2 }' "$DAY"/zdata_*_t_vol >> "$DAY"/versions.lst.tmp; fi
 
 					#grab server/client/port details from zdata 'U' and 'h' records
-					FILEEXT="$DAY/*_t"		#catchall hopefully only used when there's no n/z data and a forced update is called for
+					FILEEXT="$DAY/*_t*"		#catchall hopefully only used when there's no n/z data and a forced update is called for
 					if [ $ZDATA -ne 0 ]; then
 						FILEEXT="$DAY/zdata_*_t"
 						$AWK -F" " '$1 ~/^[Uh]/ { a[$7]++ } END { for (b in a) {print b} }' $FILEEXT | 
@@ -308,7 +308,7 @@ for DIR in "$BASEDIR"/*; do
 						debugecho "DDAY: [$DDAY]", 2
 						mv "$DAY" "$DDAY"
 						mkdir -p "$DAY"
-						cp "$DDAY"/*.lst "$DAY"
+						if [ -f "$DDAY"/*.lst ]; then cp "$DDAY"/*.lst "$DAY"; fi
 						EDIR=`mktemp -d`
 						rsync -a --delete "$EDIR/" "$DDAY/"
 						rm -rf "$DDAY"
