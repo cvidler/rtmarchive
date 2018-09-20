@@ -207,15 +207,15 @@ teardown() {
 @test "archivemgmt.sh: help" {
   run ./archivemgmt.sh -h
   [ $status -eq 0 ]
-  [ "${lines[0]}" == "*** INFO: Usage: ./archivemgmt.sh [-h] [-b basearchivedir]" ] 
+  [ "${lines[0]}" == "*** INFO: Usage: ./archivemgmt.sh [-h] [-b basearchivedir] [-u yyyy-mm-dd -a amdname] [-f]" ] 
 }
 
 @test "archivemgmt.sh: invalid parameter" {
   run ./archivemgmt.sh -g
   [ $status -eq 0 ]
   len=${#lines[0]}
-  result=${lines[0]:$len-31}
-  [ "${result}" == "*** FATAL: Invalid argument -g." ]
+  result=${lines[0]: -20}
+  [ "${result}" == "Invalid argument -g." ]
 }
 
 
