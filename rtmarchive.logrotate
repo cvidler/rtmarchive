@@ -1,4 +1,5 @@
 /var/log/rtmarchive/*.log {
+	su rtmarchive rtmarchive
 	rotate 14
 	daily
 	compress
