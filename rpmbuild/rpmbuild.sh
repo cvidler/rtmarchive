@@ -25,7 +25,7 @@ function techo {
 
 function formatdescribe {
 	hash=${1:-}
-	res=`git describe`
+	res=`git describe --tags`
 	ver=${res%%-*}
 	ver=${ver#*v}
 	release=${res#*-}
@@ -39,7 +39,7 @@ function formatdescribe {
 
 
 # get current git tag/release/commit from describe
-TAG=`git describe | tail -n1`
+TAG=`git describe --tags | tail -n1`
 debugecho "TAG: [$TAG]"
 # break it up for rpm info
 VERSION=${TAG%%-*}
