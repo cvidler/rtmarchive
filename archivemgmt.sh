@@ -294,7 +294,7 @@ for DIR in "$BASEDIR"/*; do
 						$TAR --$COMPTYPE -rf "$MONTH"/$ARCNAME -C "$DAY" . >&2
 						RC=$?
 					else
-						if [ -f "$MONTH"/$ARCNAME ]; then techo "\e[31m***FATAL:\e[0m Archive exists $MONTH/$ARCAME, yet it shouldn't, aborting to portect data integrity!"; exit 1; fi
+						if [ -f "$MONTH"/$ARCNAME ]; then techo "\e[31m***FATAL:\e[0m Archive exists $MONTH/$ARCNAME, yet it shouldn't, aborting to portect data integrity!"; exit 1; fi
 						$TAR --$COMPTYPE -cf "$MONTH"/$ARCNAME -C "$DAY" . >&2
 						RC=$?
 					fi
