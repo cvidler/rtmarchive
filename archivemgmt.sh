@@ -36,7 +36,7 @@ function debugecho {
 }
 
 function techo {
-	echo -e "[`date -u "+%Y-%m-%d %H:%M:%S"`][$AMDNAME]: $1" 
+	echo -e "[`date -u "+%Y-%m-%d %H:%M:%S"`][$AMDNAME][$$]: $1" 
 }
 
 # command line arguments
